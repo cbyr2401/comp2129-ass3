@@ -162,7 +162,7 @@ float* uniform_matrix(float value) {
 		     1 1
 		1 => 1 1
 	*/
-	for(int i = 0; row < g_width*g_width; i++){
+	for(int i = 0; i < g_width*g_width; i++){
 		result[i] = value;
 	}
 	return result;
@@ -181,9 +181,9 @@ float* sequence_matrix(float start, float step) {
 		       1 2
 		1 1 => 3 4
 	*/
-	for(int i = 0; row < g_width*g_width; i++){
+	for(int i = 0; i < g_width*g_width; i++){
 		result[i] = start;
-		start *= *step;
+		start *= step;
 	}
 	return result;
 }
