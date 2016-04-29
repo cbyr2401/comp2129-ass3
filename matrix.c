@@ -182,8 +182,7 @@ float* sequence_matrix(float start, float step) {
 		1 1 => 3 4
 	*/
 	for(int i = 0; i < g_width*g_width; i++){
-		result[i] = start;
-		start *= step;
+		result[i] = start+(step*i);
 	}
 	return result;
 }
