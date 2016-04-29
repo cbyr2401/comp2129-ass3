@@ -125,7 +125,11 @@ float* identity_matrix(void) {
 		1 0
 		0 1
 	*/
-
+	int row = 0;
+	for(int i = 0; row < g_width; i++){
+		result[row * g_width + i] = 1.0;
+		row++;
+	}
 	return result;
 }
 
@@ -158,7 +162,9 @@ float* uniform_matrix(float value) {
 		     1 1
 		1 => 1 1
 	*/
-
+	for(int i = 0; row < g_width*g_width; i++){
+		result[i] = value;
+	}
 	return result;
 }
 
@@ -175,7 +181,10 @@ float* sequence_matrix(float start, float step) {
 		       1 2
 		1 1 => 3 4
 	*/
-
+	for(int i = 0; row < g_width*g_width; i++){
+		result[i] = start;
+		start *= *step;
+	}
 	return result;
 }
 
