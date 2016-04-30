@@ -253,11 +253,13 @@ float* reversed(const float* matrix) {
 	float* result = new_matrix();
 
 	/*
-		TODO
-
 		1 2    4 3
 		3 4 => 2 1
 	*/
+	int last = (g_width*g_width) - 1;
+	for(int i = 0; i < g_width*g_width; i++){
+		result[i] = matrix[last-i];
+	}
 
 	return result;
 }
