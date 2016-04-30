@@ -371,10 +371,6 @@ float* matrix_mul(const float* matrix_a, const float* matrix_b) {
 	ssize_t sum;
 	//int tile_size = (int)sqrt(g_width);
 
-
-
-
-
 	// second method - still very slow... fixes cache misses for row-major
 //	for(int I=0; I < g_width; I+=tile_size){
 //		for(int J=0; J < g_width; J+=tile_size){
@@ -414,7 +410,7 @@ float* matrix_mul(const float* matrix_a, const float* matrix_b) {
  */
 float* matrix_pow(const float* matrix, float exponent) {
 
-	float* result = new_matrix();
+	float* result;
 
 	/*
 		TODO
@@ -428,6 +424,16 @@ float* matrix_pow(const float* matrix, float exponent) {
 		1 2        199 290
 		3 4 ^ 4 => 435 634
 	*/
+	if(exponent == 0){
+		result = identity_matrix();
+	}else if(exponent == 1){
+		result = cloned(matrix);
+	}else if(exponent > 1){
+	result = cloned(matrix);
+		for(int i=1; i < exponent; i++){
+			result = matrix_mul(result, matrix);
+		}
+	}
 
 	return result;
 }
@@ -461,16 +467,17 @@ float* matrix_conv(const float* matrix, const float* kernel) {
 float get_sum(const float* matrix) {
 
 	/*
-		TODO
-
 		2 1
 		1 2 => 6
 
 		1 1
 		1 1 => 4
 	*/
-
-	return 0;
+	ssize_t sum = 0;
+	for(int i = 0; i < g_elements; i++){
+		sum += matrix[i];
+	}
+	return sum;
 }
 
 /**
@@ -479,16 +486,19 @@ float get_sum(const float* matrix) {
 float get_trace(const float* matrix) {
 
 	/*
-		TODO
-
 		1 0
 		0 1 => 2
 
 		2 1
 		1 2 => 4
 	*/
-
-	return 0;
+	int row = 0;
+	ssize_t sum = 0;
+	for(int i = 0; row < g_width; i++){
+		sum += matrix[row * g_width + i];
+		row++;
+	}
+	return sum;
 }
 
 /**
@@ -497,16 +507,19 @@ float get_trace(const float* matrix) {
 float get_minimum(const float* matrix) {
 
 	/*
-		TODO
-
 		1 2
 		3 4 => 1
 
 		4 3
 		2 1 => 1
 	*/
-
-	return 0;
+	ssize_t min = matrix[0];
+	for(int i = 0; i < g_elements; i++){
+		if(matrix[i]<min){
+			min = matrix[i];
+		}
+	}
+	return min;
 }
 
 /**
@@ -515,8 +528,6 @@ float get_minimum(const float* matrix) {
 float get_maximum(const float* matrix) {
 
 	/*
-		TODO
-
 		1 2
 		3 4 => 4
 
@@ -524,7 +535,13 @@ float get_maximum(const float* matrix) {
 		2 1 => 4
 	*/
 
-	return 0;
+	ssize_t max = matrix[0];
+	for(int i = 0; i < g_elements; i++){
+		if(matrix[i]>max){
+			max = matrix[i];
+		}
+	}
+	return max;
 }
 
 /**
@@ -555,14 +572,18 @@ float get_determinant(const float* matrix) {
 ssize_t get_frequency(const float* matrix, float value) {
 
 	/*
-		TODO
-
 		1 1
 		1 1 :: 1 => 4
 
 		1 0
 		0 1 :: 2 => 0
 	*/
+	ssize_t freq = 0;
+	for(int i = 0; i < g_elements; i++){
+		if(matrix[i]==value){
+			freq++;
+		}
+	}
 
-	return 0;
+	return freq;
 }
