@@ -17,6 +17,14 @@ static ssize_t g_nthreads = 1;
 ////////////////////////////////
 ///     UTILITY FUNCTIONS    ///
 ////////////////////////////////
+/**
+ *	Description:	Compare function for qsort
+ *	Return:			difference between two ints
+ * 	Source:			http://www.tutorialspoint.com/c_standard_library/c_function_qsort.htm
+ */
+int sortcmp(const void * a, const void * b){
+	return ((int)( *(float*)a - *(float*)b ));
+}
 
 /**
  * Returns pseudorandom number determined by the seed.
@@ -212,7 +220,7 @@ float* cloned(const float* matrix) {
  */
 float* sorted(const float* matrix) {
 
-	float* result = new_matrix();
+	float* result = cloned(matrix);
 
 	/*
 		TODO
@@ -222,10 +230,11 @@ float* sorted(const float* matrix) {
 
 	*/
 	// clone and sort clone
-	qsort()
+	qsort(result, g_width*g_width, sizeof(float), sortcmp);
 
 	return result;
 }
+
 
 /**
  * Returns new matrix with elements rotated 90 degrees clockwise.
