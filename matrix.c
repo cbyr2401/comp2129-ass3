@@ -221,6 +221,8 @@ float* sorted(const float* matrix) {
 		2 1 => 3 4
 
 	*/
+	// clone and sort clone
+	qsort()
 
 	return result;
 }
