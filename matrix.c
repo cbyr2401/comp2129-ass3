@@ -121,7 +121,7 @@ float* new_matrix(void) {
 }
 
 /**
- * Returns new identity matrix.
+ * Returns new identity matrix. DONE!!
  */
 float* identity_matrix(void) {
 
@@ -140,7 +140,7 @@ float* identity_matrix(void) {
 }
 
 /**
- * Returns new matrix with elements generated at random using given seed.
+ * Returns new matrix with elements generated at random using given seed. DONE!!
  */
 float* random_matrix(int seed) {
 
@@ -156,7 +156,7 @@ float* random_matrix(int seed) {
 }
 
 /**
- * Returns new matrix with all elements set to given value.
+ * Returns new matrix with all elements set to given value. DONE!!
  */
 float* uniform_matrix(float value) {
 
@@ -166,14 +166,14 @@ float* uniform_matrix(float value) {
 		     1 1
 		1 => 1 1
 	*/
-	for(int i = 0; i < g_width*g_width; i++){
+	for(int i = 0; i < g_elements; i++){
 		result[i] = value;
 	}
 	return result;
 }
 
 /**
- * Returns new matrix with elements in sequence from given start and step
+ * Returns new matrix with elements in sequence from given start and step DONE!!
  */
 float* sequence_matrix(float start, float step) {
 
@@ -183,7 +183,7 @@ float* sequence_matrix(float start, float step) {
 		       1 2
 		1 1 => 3 4
 	*/
-	for(int i = 0; i < g_width*g_width; i++){
+	for(int i = 0; i < g_elements; i++){
 		result[i] = start+(step*i);
 	}
 	return result;
@@ -194,7 +194,7 @@ float* sequence_matrix(float start, float step) {
 ////////////////////////////////
 
 /**
- * Returns new matrix with elements cloned from given matrix.
+ * Returns new matrix with elements cloned from given matrix. DONE!!
  */
 float* cloned(const float* matrix) {
 
@@ -210,7 +210,7 @@ float* cloned(const float* matrix) {
 }
 
 /**
- * Returns new matrix with elements in ascending order.
+ * Returns new matrix with elements in ascending order. DONE!!
  */
 float* sorted(const float* matrix) {
 
@@ -222,7 +222,7 @@ float* sorted(const float* matrix) {
 
 	*/
 	// clone and sort clone
-	qsort(result, g_width*g_width, sizeof(float), sortcmp);
+	qsort(result, g_elements, sizeof(float), sortcmp);
 
 	return result;
 }
@@ -246,7 +246,7 @@ float* rotated(const float* matrix) {
 }
 
 /**
- * Returns new matrix with elements ordered in reverse.
+ * Returns new matrix with elements ordered in reverse.  DONE!!
  */
 float* reversed(const float* matrix) {
 
@@ -256,8 +256,8 @@ float* reversed(const float* matrix) {
 		1 2    4 3
 		3 4 => 2 1
 	*/
-	int last = (g_width*g_width) - 1;
-	for(int i = 0; i < g_width*g_width; i++){
+	int last = g_elements - 1;
+	for(int i = 0; i < g_elements; i++){
 		result[i] = matrix[last-i];
 	}
 
@@ -295,7 +295,7 @@ float* scalar_add(const float* matrix, float scalar) {
 		1 2        5 6
 		3 4 + 4 => 7 8
 	*/
-	for(int i = 0; i < g_width*g_width; i++){
+	for(int i = 0; i < g_elements; i++){
 		result[i] = matrix[i] + scalar;
 	}
 
@@ -316,7 +316,7 @@ float* scalar_mul(const float* matrix, float scalar) {
 		1 2        2 4
 		3 4 x 2 => 6 8
 	*/
-	for(int i = 0; i < g_width*g_width; i++){
+	for(int i = 0; i < g_elements; i++){
 		result[i] = matrix[i] * scalar;
 	}
 
@@ -338,7 +338,7 @@ float* matrix_add(const float* matrix_a, const float* matrix_b) {
 		1 2   4 4    5 6
 		3 4 + 4 4 => 7 8
 	*/
-	for(int i = 0; i < g_width*g_width; i++){
+	for(int i = 0; i < g_elements; i++){
 		result[i] = matrix_a[i] + matrix_b[i];
 	}
 
@@ -362,6 +362,17 @@ float* matrix_mul(const float* matrix_a, const float* matrix_b) {
 		1 2   5 6    19 22
 		3 4 x 7 8 => 43 50
 	*/
+	ssize_t sum;
+
+	for(int i=0; i < g_width; i++){
+		for(int j=0; j < g_width; j++){
+			sum = 0;
+			for(int k = 0; k < g_width; k++){
+				sum = sum*(matrix_a[k * g_width + i]*matrix_b[j * g_width + k]);
+			}
+			result[j * g_width + i] = sum;
+		}
+	}
 
 	return result;
 }
