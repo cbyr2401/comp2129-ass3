@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <stdbool.h>
 #include <pthread.h>
+#include <math.h>
 
 #include "matrix.h"
 
@@ -345,6 +346,11 @@ float* matrix_add(const float* matrix_a, const float* matrix_b) {
 	return result;
 }
 
+int min(const int a, const int b){
+	if(a<b) return b;
+	return a;
+}
+
 /**
  * Returns new matrix that is the result of
  * multiplying the two matrices together.
@@ -363,7 +369,32 @@ float* matrix_mul(const float* matrix_a, const float* matrix_b) {
 		3 4 x 7 8 => 43 50
 	*/
 	ssize_t sum;
-	
+	//int tile_size = (int)sqrt(g_width);
+
+
+
+
+
+	// second method - still very slow... fixes cache misses for row-major
+//	for(int I=0; I < g_width; I+=tile_size){
+//		for(int J=0; J < g_width; J+=tile_size){
+//			for(int K=0; K < g_width; K+=tile_size){
+//				for(int i=0; i < min(I+tile_size, g_width); i++){
+//					for(int j=0; j < min(J+tile_size, g_width); j++){
+//						sum = 0;
+//						for(int k = 0; k < min(K+tile_size, g_width); k++){
+//							//if(matrix_a[i * g_width + k] != 0 || matrix_b[k * g_width + j] != 0){
+//								sum = sum+(matrix_a[i * g_width + k]*matrix_b[k * g_width + j]);
+//							//}
+//						}
+//						result[i * g_width + j] = sum;
+//					}
+//				}
+//			}
+//		}
+//	}
+
+	// very slow method
 	for(int i=0; i < g_width; i++){
 		for(int j=0; j < g_width; j++){
 			sum = 0;
