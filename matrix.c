@@ -3,7 +3,7 @@
 #include <unistd.h>
 #include <stdbool.h>
 #include <pthread.h>
-#include <math.h>
+//#include <math.h>
 
 #include "matrix.h"
 
