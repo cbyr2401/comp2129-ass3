@@ -128,8 +128,6 @@ float* identity_matrix(void) {
 	float* result = new_matrix();
 
 	/*
-		TODO
-
 		1 0
 		0 1
 	*/
@@ -165,8 +163,6 @@ float* uniform_matrix(float value) {
 	float* result = new_matrix();
 
 	/*
-		TODO
-
 		     1 1
 		1 => 1 1
 	*/
@@ -184,8 +180,6 @@ float* sequence_matrix(float start, float step) {
 	float* result = new_matrix();
 
 	/*
-		TODO
-
 		       1 2
 		1 1 => 3 4
 	*/
@@ -223,8 +217,6 @@ float* sorted(const float* matrix) {
 	float* result = cloned(matrix);
 
 	/*
-		TODO
-
 		3 4    1 2
 		2 1 => 3 4
 
