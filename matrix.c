@@ -289,14 +289,15 @@ float* scalar_add(const float* matrix, float scalar) {
 	float* result = new_matrix();
 
 	/*
-		TODO
-
 		1 0        2 1
 		0 1 + 1 => 1 2
 
 		1 2        5 6
 		3 4 + 4 => 7 8
 	*/
+	for(int i = 0; i < g_width*g_width; i++){
+		result[i] = matrix[i] + scalar;
+	}
 
 	return result;
 }
@@ -309,14 +310,15 @@ float* scalar_mul(const float* matrix, float scalar) {
 	float* result = new_matrix();
 
 	/*
-		TODO
-
 		1 0        2 0
 		0 1 x 2 => 0 2
 
 		1 2        2 4
 		3 4 x 2 => 6 8
 	*/
+	for(int i = 0; i < g_width*g_width; i++){
+		result[i] = matrix[i] * scalar;
+	}
 
 	return result;
 }
@@ -330,14 +332,15 @@ float* matrix_add(const float* matrix_a, const float* matrix_b) {
 	float* result = new_matrix();
 
 	/*
-		TODO
-
 		1 0   0 1    1 1
 		0 1 + 1 0 => 1 1
 
 		1 2   4 4    5 6
 		3 4 + 4 4 => 7 8
 	*/
+	for(int i = 0; i < g_width*g_width; i++){
+		result[i] = matrix_a[i] + matrix_b[i];
+	}
 
 	return result;
 }
