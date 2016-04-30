@@ -363,14 +363,14 @@ float* matrix_mul(const float* matrix_a, const float* matrix_b) {
 		3 4 x 7 8 => 43 50
 	*/
 	ssize_t sum;
-
+	
 	for(int i=0; i < g_width; i++){
 		for(int j=0; j < g_width; j++){
 			sum = 0;
 			for(int k = 0; k < g_width; k++){
-				sum = sum*(matrix_a[k * g_width + i]*matrix_b[j * g_width + k]);
+				sum = sum+(matrix_a[i * g_width + k]*matrix_b[k * g_width + j]);
 			}
-			result[j * g_width + i] = sum;
+			result[i * g_width + j] = sum;
 		}
 	}
 

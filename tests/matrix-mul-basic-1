@@ -1,0 +1,7 @@
+set a = sequence 1 1
+show a
+set b = identity
+show b
+set c = matrix.mul a b
+show c
+bye
