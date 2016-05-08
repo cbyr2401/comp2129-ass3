@@ -240,8 +240,18 @@ float* rotated(const float* matrix) {
 
 		1 2    3 1
 		3 4 => 4 2
+		
+		1 2 3	 7 4 1
+		4 5 6    8 5 2
+		7 8 9 => 9 6 3
+		
 	*/
-
+	for(int row=0; row < g_width; row++){
+		for(int col=0; col < g_width; col++){
+			result[row*g_width+col] = matrix[(g_width-col-1)*g_width+(row)];
+		}
+	}
+	
 	return result;
 }
 
@@ -277,6 +287,12 @@ float* transposed(const float* matrix) {
 		1 2    1 3
 		3 4 => 2 4
 	*/
+	
+	for(int row=0; row < g_width; row++){
+		for(int col=0; col < g_width; col++){
+			result[row*g_width+col] = matrix[col*g_width+row];
+		}
+	}
 
 	return result;
 }
