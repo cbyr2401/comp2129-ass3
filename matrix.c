@@ -3,7 +3,7 @@
 #include <unistd.h>
 #include <stdbool.h>
 #include <pthread.h>
-//#include <math.h>
+#include <math.h>
 
 #include "matrix.h"
 
@@ -132,10 +132,9 @@ float* identity_matrix(void) {
 		1 0
 		0 1
 	*/
-	int row = 0;
-	for(int i = 0; row < g_width; i++){
-		result[row * g_width + i] = 1.0;
-		row++;
+
+	for(int i = 0; i < g_width; i++){
+		result[i * g_width + i] = 1.0;
 	}
 	return result;
 }
@@ -495,11 +494,11 @@ float get_trace(const float* matrix) {
 		2 1
 		1 2 => 4
 	*/
-	int row = 0;
+
 	ssize_t sum = 0;
-	for(int i = 0; row < g_width; i++){
-		sum += matrix[row * g_width + i];
-		row++;
+	for(int i = 0; i < g_width; i++){
+		sum += matrix[i * g_width + i];
+
 	}
 	return sum;
 }
@@ -547,6 +546,139 @@ float get_maximum(const float* matrix) {
 	return max;
 }
 
+
+
+/**
+ *	Returns the lower triangle of a matrix TODO: Fix
+ */
+float* matrix_low(const float* matrix){
+	float* result = new_matrix();
+
+	int row = 0;
+	for(int i = 0; row < g_width; i++){
+		for(int j = 0; j < row+1; j++){
+			result[row * g_width + j] = matrix[row * g_width + j];
+		}
+		row++;
+	}
+
+	return result;
+}
+
+/**
+ *	Returns the upper triangle of a matrix TODO: Fix
+ */
+float* matrix_upp(const float* matrix){
+	float* result = new_matrix();
+
+	int row = 0;
+	for(int i = 0; row < g_width; i++){
+		for(int j = 0; j < row+1; j++){
+			result[j * g_width + row] = matrix[j * g_width + row];
+		}
+		row++;
+	}
+
+	return result;
+}
+
+/**
+ *	Returns the product of the diagonals of a matrix
+ */
+float ptrace(const float* matrix){
+	int row = 0;
+	ssize_t product = 1;
+
+	for(int i = 0; row < g_width; i++){
+		product *= matrix[row * g_width + i];
+		row++;
+	}
+
+	return product;
+}
+
+
+
+
+
+
+
+
+/**
+ * Displays given matrix.  TODO: REMOVE
+ */
+void display_c(const float* matrix, int width) {
+
+	for (ssize_t y = 0; y < width; y++) {
+		for (ssize_t x = 0; x < width; x++) {
+			if (x > 0) printf(" ");
+			printf("%.2f", matrix[y * width + x]);
+		}
+
+		printf("\n");
+	}
+}
+
+
+/**
+ *  Builds a matrix  TODO: check working.
+ */
+float* build_matrix(const float* matrix, int crow, int width){
+	if(width == 0){
+		return NULL;
+	}
+
+	float* result = malloc(sizeof(float)*(width*width));
+
+	if(width == 1){
+		result[0*width+0] = matrix[0*width+0];
+		//display_c(result, width);
+		return result;
+	}
+
+	// columns before...
+	int offset = 0;
+	for(int row = 0; row < width; row++){
+		for(int col = 0; col < width; col++){
+			if(col == crow){
+				// when we hit the column of the current element
+				offset=1;
+			}
+			result[(row) * width + (col)] = matrix[(row+1) * (width+1) + (col+offset)];
+		}
+		offset = 0;
+	}
+	return result;
+}
+
+
+
+
+
+/**
+ *
+ */
+
+float determinant_calc(const float* matrix, int width){
+	if(width == 2){
+		return (matrix[0*width+0]*matrix[1*width+1])-(matrix[0*width+1]*matrix[1*width+0]); //pow(-1,power)*
+	}else{
+		float determinant = 0;
+		float* smatrix = NULL;
+		float result;
+		float element;
+		for(int i = 0; i < width; i++){
+			smatrix = build_matrix(matrix, i, width - 1);
+			result = (determinant_calc(smatrix, width - 1));
+			element = (pow(-1,i))*(matrix[0*width+i]);
+			determinant += element*result;
+			//printf("POWER:  %f  || DETA: %f  || result: %f  || element: %f\n", pow(-1,i), determinant, result, element);
+			free(smatrix);
+		}
+		return determinant;
+	}
+}
+
 /**
  * Returns the determinant of the matrix.
  */
@@ -566,7 +698,26 @@ float get_determinant(const float* matrix) {
 		2 0 8 => 240
 	*/
 
-	return 0;
+	if(g_width == 1){
+		return matrix[0];
+	}else if(g_width == 2){
+		return ((matrix[0*g_width+0]*matrix[1*g_width+1])-(matrix[0*g_width+1]*matrix[1*g_width+0]));
+	}else{
+		return determinant_calc(matrix, g_width);
+	}
+
+//	float* lower = matrix_low(matrix);
+//	float* upper = matrix_upp(matrix);
+//
+//	float detL = ptrace(lower);
+//	float detU = ptrace(upper);
+//
+//	float detM = detL*detU;
+//
+//	free(lower);
+//	free(upper);
+//
+//	return detM;
 }
 
 /**
