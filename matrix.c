@@ -395,7 +395,7 @@ float* matrix_mul(const float* matrix_a, const float* matrix_b) {
 		for(int j=0; j < g_width; j++){
 			sum = 0;
 			for(int k = 0; k < g_width; k++){
-				sum = sum+(matrix_a[i * g_width + k]*matrix_b[k * g_width + j]);
+				sum += (matrix_a[i * g_width + k]*matrix_b[k * g_width + j]);
 			}
 			result[i * g_width + j] = sum;
 		}
@@ -408,7 +408,7 @@ float* matrix_mul(const float* matrix_a, const float* matrix_b) {
  * Returns new matrix that is the result of
  * powering the given matrix to the exponent.
  */
-float* matrix_pow(const float* matrix, float exponent) {
+float* matrix_pow(const float* matrix, int exponent) {
 
 	float* result;
 
@@ -429,7 +429,7 @@ float* matrix_pow(const float* matrix, float exponent) {
 	}else if(exponent == 1){
 		result = cloned(matrix);
 	}else if(exponent > 1){
-	result = cloned(matrix);
+		result = cloned(matrix);
 		for(int i=1; i < exponent; i++){
 			result = matrix_mul(result, matrix);
 		}
