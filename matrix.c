@@ -201,8 +201,8 @@ float* cloned(const float* matrix) {
 
 	float* result = new_matrix();
 
-	for (ssize_t y = 0; y < g_height; y++) {
-		for (ssize_t x = 0; x < g_width; x++) {
+	for (int y = 0; y < g_height; y++) {
+		for (int x = 0; x < g_width; x++) {
 			result[y * g_width + x] = matrix[y * g_width + x];
 		}
 	}
@@ -410,11 +410,10 @@ float* matrix_mul(const float* matrix_a, const float* matrix_b) {
  */
 float* matrix_pow(const float* matrix, int exponent) {
 
-	float* result;
+	float* result = NULL;
+	float* temp;
 
 	/*
-		TODO
-
 		1 2        1 0
 		3 4 ^ 0 => 0 1
 
@@ -425,18 +424,22 @@ float* matrix_pow(const float* matrix, int exponent) {
 		3 4 ^ 4 => 435 634
 	*/
 	if(exponent == 0){
-		result = identity_matrix();
+		return identity_matrix();
 	}else if(exponent == 1){
 		result = cloned(matrix);
+		return result;
 	}else if(exponent > 1){
 		result = cloned(matrix);
 		for(int i=1; i < exponent; i++){
-			result = matrix_mul(result, matrix);
+			temp = matrix_mul(result, matrix);
+			free(result);
+			result = temp;
 		}
 	}
 
 	return result;
 }
+
 
 /**
  * Returns new matrix that is the result of

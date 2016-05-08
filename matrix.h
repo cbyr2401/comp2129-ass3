@@ -34,7 +34,7 @@ float* transposed(const float* matrix);
 
 float* scalar_add(const float* matrix, float scalar);
 float* scalar_mul(const float* matrix, float scalar);
-float* matrix_pow(const float* matrix, float exponent);
+float* matrix_pow(const float* matrix, int exponent);
 float* matrix_conv(const float* matrix, const float* kernel);
 float* matrix_add(const float* matrix_a, const float* matrix_b);
 float* matrix_mul(const float* matrix_a, const float* matrix_b);
