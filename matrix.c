@@ -548,60 +548,6 @@ float get_maximum(const float* matrix) {
 
 
 
-/**
- *	Returns the lower triangle of a matrix TODO: Fix
- */
-float* matrix_low(const float* matrix){
-	float* result = new_matrix();
-
-	int row = 0;
-	for(int i = 0; row < g_width; i++){
-		for(int j = 0; j < row+1; j++){
-			result[row * g_width + j] = matrix[row * g_width + j];
-		}
-		row++;
-	}
-
-	return result;
-}
-
-/**
- *	Returns the upper triangle of a matrix TODO: Fix
- */
-float* matrix_upp(const float* matrix){
-	float* result = new_matrix();
-
-	int row = 0;
-	for(int i = 0; row < g_width; i++){
-		for(int j = 0; j < row+1; j++){
-			result[j * g_width + row] = matrix[j * g_width + row];
-		}
-		row++;
-	}
-
-	return result;
-}
-
-/**
- *	Returns the product of the diagonals of a matrix
- */
-float ptrace(const float* matrix){
-	int row = 0;
-	ssize_t product = 1;
-
-	for(int i = 0; row < g_width; i++){
-		product *= matrix[row * g_width + i];
-		row++;
-	}
-
-	return product;
-}
-
-
-
-
-
-
 
 
 /**
@@ -621,7 +567,7 @@ void display_c(const float* matrix, int width) {
 
 
 /**
- *  Builds a matrix  TODO: check working.
+ *  Builds a matrix for the determinant function
  */
 float* build_matrix(const float* matrix, int crow, int width){
 	if(width == 0){
@@ -652,11 +598,8 @@ float* build_matrix(const float* matrix, int crow, int width){
 }
 
 
-
-
-
 /**
- *
+ *	Recursive method for finding determinants greater than n>2
  */
 
 float determinant_calc(const float* matrix, int width){
@@ -685,8 +628,6 @@ float determinant_calc(const float* matrix, int width){
 float get_determinant(const float* matrix) {
 
 	/*
-		TODO
-
 		1 0
 		0 1 => 1
 
@@ -705,19 +646,6 @@ float get_determinant(const float* matrix) {
 	}else{
 		return determinant_calc(matrix, g_width);
 	}
-
-//	float* lower = matrix_low(matrix);
-//	float* upper = matrix_upp(matrix);
-//
-//	float detL = ptrace(lower);
-//	float detU = ptrace(upper);
-//
-//	float detM = detL*detU;
-//
-//	free(lower);
-//	free(upper);
-//
-//	return detM;
 }
 
 /**
