@@ -122,6 +122,14 @@ float* new_matrix(void) {
 }
 
 /**
+ * Returns new matrix with all elements not set.
+ */
+float* empty_matrix(void) {
+
+	return malloc(g_elements*sizeof(float));
+}
+
+/**
  * Returns new identity matrix. DONE!!
  */
 float* identity_matrix(void) {
@@ -160,7 +168,7 @@ float* random_matrix(int seed) {
  */
 float* uniform_matrix(float value) {
 
-	float* result = new_matrix();
+	float* result = empty_matrix();
 
 	/*
 		     1 1
@@ -177,7 +185,7 @@ float* uniform_matrix(float value) {
  */
 float* sequence_matrix(float start, float step) {
 
-	float* result = new_matrix();
+	float* result = empty_matrix();
 
 	/*
 		       1 2
@@ -198,7 +206,7 @@ float* sequence_matrix(float start, float step) {
  */
 float* cloned(const float* matrix) {
 
-	float* result = new_matrix();
+	float* result = empty_matrix();
 
 	for (int y = 0; y < g_height; y++) {
 		for (int x = 0; x < g_width; x++) {
@@ -233,11 +241,9 @@ float* sorted(const float* matrix) {
  */
 float* rotated(const float* matrix) {
 
-	float* result = new_matrix();
+	float* result = empty_matrix();
 
 	/*
-		TODO
-
 		1 2    3 1
 		3 4 => 4 2
 		
@@ -260,7 +266,7 @@ float* rotated(const float* matrix) {
  */
 float* reversed(const float* matrix) {
 
-	float* result = new_matrix();
+	float* result = empty_matrix();
 
 	/*
 		1 2    4 3
@@ -279,7 +285,7 @@ float* reversed(const float* matrix) {
  */
 float* transposed(const float* matrix) {
 
-	float* result = new_matrix();
+	float* result = empty_matrix();
 
 	/*
 		TODO
@@ -302,7 +308,7 @@ float* transposed(const float* matrix) {
  */
 float* scalar_add(const float* matrix, float scalar) {
 
-	float* result = new_matrix();
+	float* result = empty_matrix();
 
 	/*
 		1 0        2 1
@@ -323,7 +329,7 @@ float* scalar_add(const float* matrix, float scalar) {
  */
 float* scalar_mul(const float* matrix, float scalar) {
 
-	float* result = new_matrix();
+	float* result = empty_matrix();
 
 	/*
 		1 0        2 0
@@ -345,7 +351,7 @@ float* scalar_mul(const float* matrix, float scalar) {
  */
 float* matrix_add(const float* matrix_a, const float* matrix_b) {
 
-	float* result = new_matrix();
+	float* result = empty_matrix();
 
 	/*
 		1 0   0 1    1 1
@@ -372,7 +378,7 @@ int min(const int a, const int b){
  */
 float* matrix_mul(const float* matrix_a, const float* matrix_b) {
 
-	float* result = new_matrix();
+	float* result = empty_matrix();
 
 	/*
 		TODO
@@ -384,37 +390,37 @@ float* matrix_mul(const float* matrix_a, const float* matrix_b) {
 		3 4 x 7 8 => 43 50
 	*/
 	ssize_t sum;
-	//int tile_size = (int)sqrt(g_width);
+	int tile_size = (int)sqrt(g_width);
 
-	// second method - still very slow... fixes cache misses for row-major
-//	for(int I=0; I < g_width; I+=tile_size){
-//		for(int J=0; J < g_width; J+=tile_size){
-//			for(int K=0; K < g_width; K+=tile_size){
-//				for(int i=0; i < min(I+tile_size, g_width); i++){
-//					for(int j=0; j < min(J+tile_size, g_width); j++){
-//						sum = 0;
-//						for(int k = 0; k < min(K+tile_size, g_width); k++){
-//							//if(matrix_a[i * g_width + k] != 0 || matrix_b[k * g_width + j] != 0){
-//								sum = sum+(matrix_a[i * g_width + k]*matrix_b[k * g_width + j]);
-//							//}
-//						}
-//						result[i * g_width + j] = sum;
-//					}
-//				}
-//			}
-//		}
-//	}
-
-	// very slow method
-	for(int i=0; i < g_width; i++){
-		for(int j=0; j < g_width; j++){
-			sum = 0;
-			for(int k = 0; k < g_width; k++){
-				sum += (matrix_a[i * g_width + k]*matrix_b[k * g_width + j]);
+	//second method - still very slow... fixes cache misses for row-major
+	for(int I=0; I < g_width; I+=tile_size){
+		for(int J=0; J < g_width; J+=tile_size){
+			for(int K=0; K < g_width; K+=tile_size){
+				for(int i=0; i < min(I+tile_size, g_width); i++){
+					for(int j=0; j < min(J+tile_size, g_width); j++){
+						sum = 0;
+						for(int k = 0; k < min(K+tile_size, g_width); k++){
+							if(matrix_a[i * g_width + k] != 0 || matrix_b[k * g_width + j] != 0){
+								sum = sum+(matrix_a[i * g_width + k]*matrix_b[k * g_width + j]);
+							}
+						}
+						result[i * g_width + j] = sum;
+					}
+				}
 			}
-			result[i * g_width + j] = sum;
 		}
 	}
+
+	// very slow method
+	// for(int i=0; i < g_width; i++){
+		// for(int j=0; j < g_width; j++){
+			// sum = 0;
+			// for(int k = 0; k < g_width; k++){
+				// sum += (matrix_a[i * g_width + k]*matrix_b[k * g_width + j]);
+			// }
+			// result[i * g_width + j] = sum;
+		// }
+	// }
 
 	return result;
 }
