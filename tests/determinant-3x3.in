@@ -1,0 +1,8 @@
+SET a = uniform 4
+SET b = sequence 1 2
+SET c = identity
+SHOW b
+compute determinant a
+compute determinant b
+compute determinant c
+bye
