@@ -389,7 +389,7 @@ float* matrix_mul(const float* matrix_a, const float* matrix_b) {
 		1 2   5 6    19 22
 		3 4 x 7 8 => 43 50
 	*/
-	ssize_t sum;
+	float sum;
 	int tile_size = (int)sqrt(g_width);
 
 	//second method - still very slow... fixes cache misses for row-major
@@ -400,9 +400,9 @@ float* matrix_mul(const float* matrix_a, const float* matrix_b) {
 					for(int j=0; j < min(J+tile_size, g_width); j++){
 						sum = 0;
 						for(int k = 0; k < min(K+tile_size, g_width); k++){
-							if(matrix_a[i * g_width + k] != 0 || matrix_b[k * g_width + j] != 0){
+							//if(matrix_a[i * g_width + k] != 0 || matrix_b[k * g_width + j] != 0){
 								sum = sum+(matrix_a[i * g_width + k]*matrix_b[k * g_width + j]);
-							}
+							//}
 						}
 						result[i * g_width + j] = sum;
 					}
@@ -415,7 +415,7 @@ float* matrix_mul(const float* matrix_a, const float* matrix_b) {
 	// for(int i=0; i < g_width; i++){
 		// for(int j=0; j < g_width; j++){
 			// sum = 0;
-			// for(int k = 0; k < g_width; k++){
+			// for(int k=0; k < g_width; k++){
 				// sum += (matrix_a[i * g_width + k]*matrix_b[k * g_width + j]);
 			// }
 			// result[i * g_width + j] = sum;
@@ -497,7 +497,7 @@ float get_sum(const float* matrix) {
 		1 1
 		1 1 => 4
 	*/
-	ssize_t sum = 0;
+	float sum = 0;
 	for(int i = 0; i < g_elements; i++){
 		sum += matrix[i];
 	}
@@ -517,12 +517,17 @@ float get_trace(const float* matrix) {
 		1 2 => 4
 	*/
 
-	ssize_t sum = 0;
-	for(int i = 0; i < g_width; i++){
-		sum += matrix[i * g_width + i];
-
+	
+	if(g_width == 1){
+		return matrix[0];
+	}else{
+		float sum = 0;
+		for(int i = 0; i < g_width; i++){
+			sum += matrix[i * g_width + i];
+		}
+		return sum;
 	}
-	return sum;
+	
 }
 
 /**
