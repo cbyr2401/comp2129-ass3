@@ -367,6 +367,11 @@ float* matrix_add(const float* matrix_a, const float* matrix_b) {
 	return result;
 }
 
+
+/**
+ * Returns the smaller of two given floats.
+ *  Used for matrix.mul with cache miss improvement.
+ */
 int min(const int a, const int b){
 	if(a<b) return b;
 	return a;
@@ -477,7 +482,63 @@ float* matrix_conv(const float* matrix, const float* kernel) {
 		computed according to the weighted sum of each value and it's
 		neighbours, where the weights are given by the kernel matrix.
 	*/
+	int sum = 0;
+	// for(int row = 0; row < g_width; row++){
+		// for(int pixel = 0; pixel < g_width; pixel++){
+			// sum = 0;
+			// for(int krow = 0; krow < 3; krow++){
+				// for(int element = 0; element < 3; element++){
+					// if(row+krow < 0)
+					// sum += kernel[krow*3+element] * matrix[(row+krow-1)*g_width+(pixel+element-1)];
+				// }
+			// }
+			// result[row*g_width+pixel] = sum;
+		// }
+	// }
+	int width_kernel = 3;
+	int offset_col = 0;
+	int offset_row = 0;
+	
+	for(int row=0; row < g_width; row++){
+		// traverse the array one element at a time.
+		for(int col=0; col < g_width; col++){
+			// start working out the convolution of one element,
+			//   moving along the kernel one at a time.
+			//  Kernel starts in it's top corner.
+						
+			
+			for(int c_row=0; c_row < width_kernel; c_row++){
+				for(int c_col=0; c_col < width_kernel; c_col++){
+					// account for padding / over hang
+					// account for fact that kernel needs to be over the centre of the matrix
+					printf("Element: %f  ||  kernel (%d, %d)  || matrix (%d, %d)\n", 
+								matrix[(row+c_row+1+offset_row) * g_width + (col+c_col+1+offset_col)],
+								c_row,
+								c_col,
+								row+c_row+1+offset_row,
+								col+c_col+1+offset_col				
+					);
+					
+					if(row == 0 && c_row==0) offset_row = 1;
+					else offset_row = 0;
+					
+					if(row == g_width-1 && c_row==0) offset_row = -1;
+					else offset_row = 0;
 
+					if(col == 0 && c_col) offset_col = 1;
+					else offset_col = 0;
+					
+					if(col == g_width-1 && c_col ==2) offset_col = -1;
+					else offset_col = 0;
+					
+					// reference (centre):  matrix[row*g_width+col];
+					sum += kernel[c_row * width_kernel + col] * matrix[(row+c_row-1+offset_row) * g_width + (col+c_col-1+offset_col)];
+				}
+				result[row * g_width + col] = sum;
+			}
+		}
+	}
+	
 	return result;
 }
 

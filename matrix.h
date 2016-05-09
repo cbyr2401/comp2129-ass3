@@ -48,4 +48,13 @@ float get_maximum(const float* matrix);
 float get_determinant(const float* matrix);
 ssize_t get_frequency(const float* matrix, float value);
 
+// custom function:
+float* build_matrix(const float* matrix, int current_row, int width);
+void display_c(const float* matrix, int width);
+float determinant_calc(const float* matrix, int width);
+int sortcmp(const void * a, const void * b);
+int min(const int a, const int b);
+
+
+
 #endif
