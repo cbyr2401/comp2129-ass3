@@ -16,6 +16,14 @@ static ssize_t g_elements = 0;
 static ssize_t g_nthreads = 1;
 
 ////////////////////////////////
+///    THREADING FUNCTIONS   ///
+////////////////////////////////
+
+
+
+
+
+////////////////////////////////
 ///     UTILITY FUNCTIONS    ///
 ////////////////////////////////
 /**
@@ -208,10 +216,8 @@ float* cloned(const float* matrix) {
 
 	float* result = empty_matrix();
 
-	for (int y = 0; y < g_height; y++) {
-		for (int x = 0; x < g_width; x++) {
-			result[y * g_width + x] = matrix[y * g_width + x];
-		}
+	for (int e = 0; e < g_elements; e++) {
+		result[e] = matrix[e];
 	}
 
 	return result;
@@ -584,7 +590,7 @@ float get_minimum(const float* matrix) {
 		4 3
 		2 1 => 1
 	*/
-	ssize_t min = matrix[0];
+	float min = matrix[0];
 	for(int i = 0; i < g_elements; i++){
 		if(matrix[i]<min){
 			min = matrix[i];
@@ -606,7 +612,7 @@ float get_maximum(const float* matrix) {
 		2 1 => 4
 	*/
 
-	ssize_t max = matrix[0];
+	float max = matrix[0];
 	for(int i = 0; i < g_elements; i++){
 		if(matrix[i]>max){
 			max = matrix[i];
@@ -624,8 +630,8 @@ float get_maximum(const float* matrix) {
  */
 void display_c(const float* matrix, int width) {
 
-	for (ssize_t y = 0; y < width; y++) {
-		for (ssize_t x = 0; x < width; x++) {
+	for (int y = 0; y < width; y++) {
+		for (int x = 0; x < width; x++) {
 			if (x > 0) printf(" ");
 			printf("%.2f", matrix[y * width + x]);
 		}
@@ -672,8 +678,15 @@ float* build_matrix(const float* matrix, int crow, int width){
  */
 
 float determinant_calc(const float* matrix, int width){
-	if(width == 2){
-		return (matrix[0*width+0]*matrix[1*width+1])-(matrix[0*width+1]*matrix[1*width+0]); //pow(-1,power)*
+	if(width == 3){
+		// do not call recurrsion again...
+		return ((matrix[0*width+0]*((matrix[1*width+1]*matrix[2*width+2])-(matrix[2*width+1]*matrix[1*width+2])))
+				- (matrix[0*width+1]*((matrix[1*width+0]*matrix[2*width+2])-(matrix[2*width+0]*matrix[1*width+2])))
+				+ (matrix[0*width+2]*((matrix[1*width+0]*matrix[2*width+1])-(matrix[2*width+0]*matrix[1*width+1]))));
+	}else if(width == 2){
+		// do not call recurrsion again...
+		return (matrix[0*width+0]*matrix[1*width+1])
+				-(matrix[0*width+1]*matrix[1*width+0]);
 	}else{
 		float determinant = 0;
 		float* smatrix = NULL;
