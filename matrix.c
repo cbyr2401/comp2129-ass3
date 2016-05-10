@@ -476,11 +476,15 @@ float* matrix_conv(const float* matrix, const float* kernel) {
 	float* result = new_matrix();
 
 	/*
-		TODO
-
 		Convolution is the process in which the values of a matrix are
 		computed according to the weighted sum of each value and it's
 		neighbours, where the weights are given by the kernel matrix.
+	
+		1  2  3  4				-4 -2 -1  1
+		5  6  7  8				 4  6  7  9
+		9  10 11 12				 8  10 11 13
+		13 14 15 16 :: sharpen =>  16 18 19 21
+		
 	*/
 	float sum = 0;
 	int width_kernel = 3;
@@ -508,17 +512,8 @@ float* matrix_conv(const float* matrix, const float* kernel) {
 					if( col == 0 && c_col == 0) offset_col = 1; //whole left side
 					if( col == g_width-1 && c_col == 2) offset_col = -1; // whole right side					
 
-					/*
-					  1  2  3  4				-4 -2 -1  1
-					  5  6  7  8				 4  6  7  9
-					  9  10 11 12				 8  10 11 13
-					  13 14 15 16 :: sharpen =>  16 18 19 21
-					
-					*/
-					
 					// reference (centre):  matrix[row*g_width+col];
 					sum += kernel[c_row * width_kernel + c_col] * matrix[(row+c_row-1+offset_row) * g_width + (col+c_col-1+offset_col)];
-							//kernel[krow*3+element] * matrix[(row+krow-1)*g_width+(pixel+element-1)];
 				}
 				result[row * g_width + col] = sum;
 			}
