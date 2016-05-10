@@ -54,6 +54,14 @@ float determinant_calc(const float* matrix, int width);
 int sortcmp(const void * a, const void * b);
 int min(const int a, const int b);
 
-
+//thread stuff
+struct thread_data{
+	int thread_id;
+	float* matrix;
+	float* result;
+	int start;
+	int end;
+};
+typedef struct thread_data thdata;
 
 #endif

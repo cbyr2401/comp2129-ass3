@@ -15,6 +15,9 @@ static ssize_t g_elements = 0;
 
 static ssize_t g_nthreads = 1;
 
+
+
+
 ////////////////////////////////
 ///    THREADING FUNCTIONS   ///
 ////////////////////////////////
@@ -136,6 +139,15 @@ float* empty_matrix(void) {
 	return malloc((g_elements+1)*sizeof(float));
 }
 
+void* identity_thread(void* argv){
+	thdata* data = (thdata*) argv;
+	for(int i = data->start; i < data->end; i++){
+		data->result[i * g_width + i] = 1.0;
+	}
+	
+	return NULL;
+}
+
 /**
  * Returns new identity matrix. DONE!!
  */
@@ -148,11 +160,49 @@ float* identity_matrix(void) {
 		0 1
 	*/
 	result[g_elements] = 1.0;
-	for(int i = 0; i < g_width; i++){
-		result[i * g_width + i] = 1.0;
+	
+	if(g_width > 10){
+		thdata args[g_nthreads];
+		pthread_t thread_ids[g_nthreads];
+			
+		// check odd number threads and odd matrix size
+		
+		int partition = g_width / g_nthreads;
+		int start = 0;
+		int end;
+		
+		// build args array
+		for(int id=0; id < g_nthreads; id++){
+			start = start + (id*partition);
+			end = partition + (id*partition);
+			
+			args[id] = (thdata) {
+				.thread_id = id,
+				.matrix = NULL,
+				.result = result,
+				.start = start,
+				.end = end,
+			};
+		}
+		
+		// launch threads
+		for (int i = 0; i < g_nthreads; i++) {
+			pthread_create(thread_ids + i, NULL, identity_thread, args + i);
+		}
+		
+		// wait for threads to finish
+		for (size_t i = 0; i < g_nthreads; i++) {
+			pthread_join(thread_ids[i], NULL);
+		}
+	}else{
+		for(int i = 0; i < g_width; i++){
+			result[i * g_width + i] = 1.0;
+		}
 	}
+	
 	return result;
 }
+
 
 /**
  * Returns new matrix with elements generated at random using given seed. DONE!!
@@ -230,8 +280,8 @@ float* cloned(const float* matrix) {
 	float* result = empty_matrix();
 	
 	result[g_elements] = matrix[g_elements];
-
-	memcpy(result, matrix, sizeof(float)*g_elements);
+	// TODO: Fix
+	//memcpy(result, matrix, sizeof(float)*g_elements);
 
 	return result;
 }
