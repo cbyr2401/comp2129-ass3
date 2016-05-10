@@ -64,12 +64,25 @@ struct thread_data{
 	float value;
 	float step;
 };
-typedef struct thread_data thdata;
 
-void spawn_threads(void*(*funcptr)(void*), float* matrix, float* result, int partition, float value, float step);
+struct thread_mul{
+	int thread_id;
+	const float* matrix_a;
+	const float* matrix_b;
+	float* result;
+	int start;
+	int end;
+};
+
+typedef struct thread_data thdata;
+typedef struct thread_mul thmuldata;
+
+void spawn_threads(void*(*funcptr)(void*), const float* matrix, float* result, int partition, float value, float step);
+void spawn_threads_mul(void*(*funcptr)(void*), const float* matrix_a, const float* matrix_b, float* result, int partition);
 void* identity_thread(void* argv);
 void* uniform_thread(void* argv);
 void* sequence_thread(void* argv);
+void* scalar_mul_thread(void* argv);
 
 
 #endif

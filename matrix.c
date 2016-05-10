@@ -50,7 +50,7 @@ static ssize_t g_nthreads = 1;
 ///    THREADING FUNCTIONS   ///
 ////////////////////////////////
 // threads for void* make_matrix(void) operations.
-void spawn_threads(void*(*funcptr)(void*), float* matrix, float* result, int partition, float value, float step){
+void spawn_threads(void*(*funcptr)(void*), const float* matrix, float* result, int partition, float value, float step){
 	thdata args[g_nthreads];
 	pthread_t thread_ids[g_nthreads];
 	
@@ -85,6 +85,44 @@ void spawn_threads(void*(*funcptr)(void*), float* matrix, float* result, int par
 		pthread_join(thread_ids[i], NULL);
 	}
 }
+
+// spawn threads for matrix multiplication
+void spawn_threads_mul(void*(*funcptr)(void*), const float* matrix_a, const float* matrix_b, float* result, int partition){
+	thmuldata args[g_nthreads];
+	pthread_t thread_ids[g_nthreads];
+	
+	int start = 0;
+	int end;
+	
+	// build args array
+	for(int id=0; id < g_nthreads; id++){
+		start = (id*partition);
+		end = partition + (id*partition);
+		
+		//printf("thread: %d || start: %d || end: %d\n", id, start, end);
+		
+		args[id] = (thmuldata) {
+			.thread_id = id,
+			.matrix_a = matrix_a,
+			.matrix_b = matrix_b,
+			.result = result,
+			.start = start,
+			.end = end,
+		};
+	}
+	
+	// launch threads
+	for (int i = 0; i < g_nthreads; i++) {
+		pthread_create(thread_ids + i, NULL, funcptr, args + i);
+	}
+	
+	// wait for threads to finish
+	for (size_t i = 0; i < g_nthreads; i++) {
+		pthread_join(thread_ids[i], NULL);
+	}
+}
+
+
 
 ////////////////////////////////
 ///    THREADING WORKERS     ///
@@ -124,6 +162,34 @@ void* sequence_thread(void* argv){
 	return NULL;
 }
 
+void* scalar_mul_thread(void* argv){
+	thdata* data = (thdata*) argv;
+	float scalar = data->value;
+	
+	for(int i = data->start; i < data->end; i++){
+		data->result[i] = data->matrix[i] * scalar;
+	}
+	
+	return NULL;
+}
+
+void* matrix_mul_thread(void* argv){
+	thmuldata* data = (thmuldata*) argv;
+	
+	float sum = 0;
+	
+	for(int i=data->start; i < data->end; i++){
+		for(int j=0; j < g_width; j++){
+			sum = 0;
+			for(int k=0; k < g_width; k++){
+				sum += (data->matrix_a[i * g_width + k]*data->matrix_b[k * g_width + j]);
+			}
+			data->result[i * g_width + j] = sum;
+		}
+	}
+	
+	return NULL;
+}
 
 ////////////////////////////////
 ///     UTILITY FUNCTIONS    ///
@@ -492,13 +558,20 @@ float* scalar_mul(const float* matrix, float scalar) {
 		1 2        2 4
 		3 4 x 2 => 6 8
 	*/
-
-	for(int i = 0; i < g_elements; i++){
-		result[i] = matrix[i] * scalar;
+	if(g_width > OPTIMIAL_THREAD && g_nthreads > 1){
+		void* (*functionPtr)(void*);
+		functionPtr = &scalar_mul_thread;
+		int partition = g_elements / g_nthreads;
+		spawn_threads(functionPtr, matrix, result, partition, scalar, 0);
+	}else{
+		for(int i = 0; i < g_elements; i++){
+			result[i] = matrix[i] * scalar;
+		}
 	}
-
+	
 	return result;
 }
+
 
 /**
  * Returns new matrix that is the result of
@@ -569,15 +642,22 @@ float* matrix_mul(const float* matrix_a, const float* matrix_b) {
 			// }
 		// }
 	// }
-
-	// very slow method
-	for(int i=0; i < g_width; i++){
-		for(int j=0; j < g_width; j++){
-			sum = 0;
-			for(int k=0; k < g_width; k++){
-				sum += (matrix_a[i * g_width + k]*matrix_b[k * g_width + j]);
+	
+	if(g_width > OPTIMIAL_THREAD-20 && g_nthreads > 1){
+		void* (*functionPtr)(void*);
+		functionPtr = &matrix_mul_thread;
+		int partition = g_width / g_nthreads;
+		spawn_threads_mul(functionPtr, matrix_a, matrix_b, result, partition);
+	}else{
+		// very slow method
+		for(int i=0; i < g_width; i++){
+			for(int j=0; j < g_width; j++){
+				sum = 0;
+				for(int k=0; k < g_width; k++){
+					sum += (matrix_a[i * g_width + k]*matrix_b[k * g_width + j]);
+				}
+				result[i * g_width + j] = sum;
 			}
-			result[i * g_width + j] = sum;
 		}
 	}
 
