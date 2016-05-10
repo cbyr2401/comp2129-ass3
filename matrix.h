@@ -6,7 +6,6 @@
 // utility functions
 
 int fast_rand(void);
-int sortcmp(const void * a, const void * b);
 
 void set_seed(int value);
 void set_nthreads(ssize_t count);

@@ -125,8 +125,7 @@ void display_element(const float* matrix, ssize_t row, ssize_t column) {
  * Returns new matrix with all elements set to zero.
  */
 float* new_matrix(void) {
-
-	return calloc(g_elements, sizeof(float));
+	return calloc(g_elements+1, sizeof(float));
 }
 
 /**
@@ -134,7 +133,7 @@ float* new_matrix(void) {
  */
 float* empty_matrix(void) {
 
-	return malloc(g_elements*sizeof(float));
+	return malloc((g_elements+1)*sizeof(float));
 }
 
 /**
@@ -148,7 +147,7 @@ float* identity_matrix(void) {
 		1 0
 		0 1
 	*/
-
+	result[g_elements] = 1.0;
 	for(int i = 0; i < g_width; i++){
 		result[i * g_width + i] = 1.0;
 	}
@@ -163,7 +162,9 @@ float* random_matrix(int seed) {
 	float* matrix = new_matrix();
 
 	set_seed(seed);
-
+	
+	matrix[g_elements] = 5.0;
+	
 	for (ssize_t i = 0; i < g_elements; i++) {
 		matrix[i] = fast_rand();
 	}
@@ -182,11 +183,21 @@ float* uniform_matrix(float value) {
 		     1 1
 		1 => 1 1
 	*/
+	// // threading...
+	// pthread_t threads[g_nthreads];
+	
+	// for(int t=0; t  < g_nthreads; t++){
+		
+	// }
+	result[g_elements] = 2.0;
+	
 	for(int i = 0; i < g_elements; i++){
 		result[i] = value;
 	}
 	return result;
 }
+
+
 
 /**
  * Returns new matrix with elements in sequence from given start and step DONE!!
@@ -199,6 +210,8 @@ float* sequence_matrix(float start, float step) {
 		       1 2
 		1 1 => 3 4
 	*/
+	result[g_elements] = 3.0;
+	
 	for(int i = 0; i < g_elements; i++){
 		result[i] = start+(step*i);
 	}
@@ -215,30 +228,37 @@ float* sequence_matrix(float start, float step) {
 float* cloned(const float* matrix) {
 
 	float* result = empty_matrix();
+	
+	result[g_elements] = matrix[g_elements];
 
-	for (int e = 0; e < g_elements; e++) {
-		result[e] = matrix[e];
-	}
+	memcpy(result, matrix, sizeof(float)*g_elements);
 
 	return result;
 }
+
 
 /**
  * Returns new matrix with elements in ascending order. DONE!!
  */
 float* sorted(const float* matrix) {
 
-	float* result = cloned(matrix);
+	
 
 	/*
 		3 4    1 2
 		2 1 => 3 4
 
 	*/
+	float* result = cloned(matrix);
 	// clone and sort clone
-	qsort(result, g_elements, sizeof(float), sortcmp);
-
-	return result;
+	if(matrix[g_elements] == 2.0 || matrix[g_elements] == 4.0){
+		return result;
+	}else{
+		result[g_elements] = 4.0;
+		qsort(result, g_elements, sizeof(float), sortcmp);
+		return result;
+	}
+	
 }
 
 
@@ -344,6 +364,7 @@ float* scalar_mul(const float* matrix, float scalar) {
 		1 2        2 4
 		3 4 x 2 => 6 8
 	*/
+
 	for(int i = 0; i < g_elements; i++){
 		result[i] = matrix[i] * scalar;
 	}
@@ -366,6 +387,7 @@ float* matrix_add(const float* matrix_a, const float* matrix_b) {
 		1 2   4 4    5 6
 		3 4 + 4 4 => 7 8
 	*/
+	
 	for(int i = 0; i < g_elements; i++){
 		result[i] = matrix_a[i] + matrix_b[i];
 	}
@@ -545,11 +567,17 @@ float get_sum(const float* matrix) {
 		1 1
 		1 1 => 4
 	*/
-	float sum = 0;
-	for(int i = 0; i < g_elements; i++){
-		sum += matrix[i];
+	if(matrix[g_elements] == 1.0) return g_width;
+	else if(matrix[g_elements] == 2.0) return matrix[0]*g_elements;
+	else if(matrix[g_elements] == 3.0) return ((g_elements/2.0)*(matrix[0]+matrix[g_elements-1]));
+	else{
+		float sum = 0;
+		for(int i = 0; i < g_elements; i++){
+			sum += matrix[i];
+		}
+		return sum;
 	}
-	return sum;
+	
 }
 
 /**
@@ -564,18 +592,16 @@ float get_trace(const float* matrix) {
 		2 1
 		1 2 => 4
 	*/
-
-	
-	if(g_width == 1){
-		return matrix[0];
-	}else{
+	if(matrix[g_elements] == 1.0) return g_width;
+	else if(matrix[g_elements] == 2.0) return matrix[0]*g_width;
+	else if(g_width == 1) return matrix[0];
+	else{
 		float sum = 0;
 		for(int i = 0; i < g_width; i++){
 			sum += matrix[i * g_width + i];
 		}
 		return sum;
 	}
-	
 }
 
 /**
@@ -590,13 +616,19 @@ float get_minimum(const float* matrix) {
 		4 3
 		2 1 => 1
 	*/
-	float min = matrix[0];
-	for(int i = 0; i < g_elements; i++){
-		if(matrix[i]<min){
-			min = matrix[i];
+	if(matrix[g_elements] == 1.0) return 0.0;
+	else if(matrix[g_elements] == 2.0) return matrix[0];
+	else if(matrix[g_elements] == 3.0) return matrix[0];
+	else if(matrix[g_elements] == 4.0) return matrix[0];
+	else{
+		float min = matrix[0];
+		for(int i = 0; i < g_elements; i++){
+			if(matrix[i]<min){
+				min = matrix[i];
+			}
 		}
-	}
-	return min;
+		return min;
+	}	
 }
 
 /**
@@ -611,14 +643,19 @@ float get_maximum(const float* matrix) {
 		4 3
 		2 1 => 4
 	*/
-
-	float max = matrix[0];
-	for(int i = 0; i < g_elements; i++){
-		if(matrix[i]>max){
-			max = matrix[i];
+	if(matrix[g_elements] == 1.0) return 1.0;
+	else if(matrix[g_elements] == 2.0) return matrix[0];
+	else if(matrix[g_elements] == 3.0) return matrix[g_elements-1];
+	else if(matrix[g_elements] == 4.0) return matrix[g_elements-1];
+	else{
+		float max = matrix[0];
+		for(int i = 0; i < g_elements; i++){
+			if(matrix[i]>max){
+				max = matrix[i];
+			}
 		}
-	}
-	return max;
+		return max;
+	}	
 }
 
 
@@ -720,7 +757,7 @@ float get_determinant(const float* matrix) {
 		0 4 0
 		2 0 8 => 240
 	*/
-
+	//det search for zero on column, go along column with zero
 	if(g_width == 1){
 		return matrix[0];
 	}else if(g_width == 2){
