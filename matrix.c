@@ -482,7 +482,7 @@ float* matrix_conv(const float* matrix, const float* kernel) {
 		computed according to the weighted sum of each value and it's
 		neighbours, where the weights are given by the kernel matrix.
 	*/
-	int sum = 0;
+	float sum = 0;
 	int width_kernel = 3;
 	int offset_col = 0;
 	int offset_row = 0;
@@ -504,7 +504,6 @@ float* matrix_conv(const float* matrix, const float* kernel) {
 					offset_row = 0;
 					if( row == 0 && c_row == 0) offset_row = 1;  // whole top row
 					if( row == g_width-1 && c_row == 2) offset_row = -1; // whole bottom row
-					//if( c_row < 2 && row == 0 && col == 0) offset_col = -1;  // top left
 					
 					if( col == 0 && c_col == 0) offset_col = 1; //whole left side
 					if( col == g_width-1 && c_col == 2) offset_col = -1; // whole right side					
