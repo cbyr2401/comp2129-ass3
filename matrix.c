@@ -4,8 +4,28 @@
 #include <stdbool.h>
 #include <pthread.h>
 #include <math.h>
+#include <string.h>
 
 #include "matrix.h"
+
+#define OPTIMIAL_THREAD 32
+
+#define M_IDENTITY 1.0
+#define M_SEQUENCE 2.0
+#define M_UNIFORM 3.0
+#define M_SORTED 4.0
+#define M_RANDOM 5.0
+
+#define CACHE_SIZE 1
+
+#define CACHE_TYPE (g_elements)
+#define CACHE_SORTED (g_elements+1)
+#define CACHE_MIN (g_elements+2)
+#define CACHE_MAX (g_elements+3)
+#define CACHE_SUM (g_elements+4)
+#define CACHE_DET (g_elements+5)
+#define CACHE_TRACE (g_elements+6)
+
 
 static int g_seed = 0;
 
@@ -16,14 +36,93 @@ static ssize_t g_elements = 0;
 static ssize_t g_nthreads = 1;
 
 
-
+void set_cache(float* matrix, float type, float sorted, float min, float max, float sum, float det, float trace){
+	matrix[CACHE_TYPE] = type;
+	matrix[CACHE_SORTED] = sorted;
+	matrix[CACHE_MIN] = min;
+	matrix[CACHE_MAX] = max;
+	matrix[CACHE_SUM] = sum;
+	matrix[CACHE_DET] =  det;
+	matrix[CACHE_TRACE] =  trace;
+}
 
 ////////////////////////////////
 ///    THREADING FUNCTIONS   ///
 ////////////////////////////////
+// threads for void* make_matrix(void) operations.
+void spawn_threads(void*(*funcptr)(void*), float* matrix, float* result, int partition, float value, float step){
+	thdata args[g_nthreads];
+	pthread_t thread_ids[g_nthreads];
+	
+	int start = 0;
+	int end;
+	
+	// build args array
+	for(int id=0; id < g_nthreads; id++){
+		start = (id*partition);
+		end = partition + (id*partition);
+		
+		printf("thread: %d || start: %d || end: %d\n", id, start, end);
+		
+		args[id] = (thdata) {
+			.thread_id = id,
+			.matrix = NULL,
+			.result = result,
+			.start = start,
+			.end = end,
+			.value = value,
+			.step = step,
+		};
+	}
+	
+	// launch threads
+	for (int i = 0; i < g_nthreads; i++) {
+		pthread_create(thread_ids + i, NULL, funcptr, args + i);
+	}
+	
+	// wait for threads to finish
+	for (size_t i = 0; i < g_nthreads; i++) {
+		pthread_join(thread_ids[i], NULL);
+	}
+}
 
+////////////////////////////////
+///    THREADING WORKERS     ///
+////////////////////////////////
 
+void* identity_thread(void* argv){
+	thdata* data = (thdata*) argv;
+	
+	for(int i = data->start; i < data->end; i++){
+		data->result[i * g_width + i] = 1.0;
+	}
+	
+	return NULL;
+}
 
+void* uniform_thread(void* argv){
+	thdata* data = (thdata*) argv;
+	
+	float value = data->value;
+	
+	for(int i = data->start; i < data->end; i++){
+		data->result[i] = value;
+	}
+	
+	return NULL;
+}
+
+void* sequence_thread(void* argv){
+	thdata* data = (thdata*) argv;
+	float step = data->step;
+	float start = data->value;
+	
+	for(int i = data->start; i < data->end; i++){
+		data->result[i] = start + (step*i);
+	}
+	
+	return NULL;
+}
 
 
 ////////////////////////////////
@@ -128,28 +227,18 @@ void display_element(const float* matrix, ssize_t row, ssize_t column) {
  * Returns new matrix with all elements set to zero.
  */
 float* new_matrix(void) {
-	return calloc(g_elements+1, sizeof(float));
+	return calloc(g_elements+CACHE_SIZE, sizeof(float));
 }
 
 /**
  * Returns new matrix with all elements not set.
  */
 float* empty_matrix(void) {
-
-	return malloc((g_elements+1)*sizeof(float));
-}
-
-void* identity_thread(void* argv){
-	thdata* data = (thdata*) argv;
-	for(int i = data->start; i < data->end; i++){
-		data->result[i * g_width + i] = 1.0;
-	}
-	
-	return NULL;
+	return malloc((g_elements+CACHE_SIZE)*sizeof(float));
 }
 
 /**
- * Returns new identity matrix. DONE!!
+ * Returns new identity matrix.
  */
 float* identity_matrix(void) {
 
@@ -159,41 +248,16 @@ float* identity_matrix(void) {
 		1 0
 		0 1
 	*/
-	result[g_elements] = 1.0;
+	//set_cache(result,M_IDENTITY,0.0,0.0,1.0,g_width,1.0,g_width);
 	
-	if(g_width > 10){
-		thdata args[g_nthreads];
-		pthread_t thread_ids[g_nthreads];
-			
-		// check odd number threads and odd matrix size
-		
+	result[CACHE_TYPE] = M_IDENTITY;
+	
+	if(g_width > OPTIMIAL_THREAD && g_nthreads > 1){
+		void* (*functionPtr)(void*);
+		functionPtr = &identity_thread;
 		int partition = g_width / g_nthreads;
-		int start = 0;
-		int end;
+		spawn_threads(functionPtr, NULL, result, partition, 0, 0);
 		
-		// build args array
-		for(int id=0; id < g_nthreads; id++){
-			start = start + (id*partition);
-			end = partition + (id*partition);
-			
-			args[id] = (thdata) {
-				.thread_id = id,
-				.matrix = NULL,
-				.result = result,
-				.start = start,
-				.end = end,
-			};
-		}
-		
-		// launch threads
-		for (int i = 0; i < g_nthreads; i++) {
-			pthread_create(thread_ids + i, NULL, identity_thread, args + i);
-		}
-		
-		// wait for threads to finish
-		for (size_t i = 0; i < g_nthreads; i++) {
-			pthread_join(thread_ids[i], NULL);
-		}
 	}else{
 		for(int i = 0; i < g_width; i++){
 			result[i * g_width + i] = 1.0;
@@ -213,7 +277,8 @@ float* random_matrix(int seed) {
 
 	set_seed(seed);
 	
-	matrix[g_elements] = 5.0;
+	//set_cache(result,M_RANDOM,0.0,FLT_MAX,FLT_MIN,FLT_MIN,FLT_MIN,FLT_MIN);
+	matrix[CACHE_TYPE] = M_RANDOM;
 	
 	for (ssize_t i = 0; i < g_elements; i++) {
 		matrix[i] = fast_rand();
@@ -233,17 +298,21 @@ float* uniform_matrix(float value) {
 		     1 1
 		1 => 1 1
 	*/
-	// // threading...
-	// pthread_t threads[g_nthreads];
+
+	//set_cache(result,M_UNIFORM,1.0,value,value,value*g_elements,FLT_MIN,4*g_width);
+	result[CACHE_TYPE] = M_UNIFORM;
 	
-	// for(int t=0; t  < g_nthreads; t++){
-		
-	// }
-	result[g_elements] = 2.0;
-	
-	for(int i = 0; i < g_elements; i++){
-		result[i] = value;
+	if(g_width > OPTIMIAL_THREAD && g_nthreads > 1){
+		void* (*functionPtr)(void*);
+		functionPtr = &uniform_thread;
+		int partition = g_elements / g_nthreads;
+		spawn_threads(functionPtr, NULL, result, partition, value, 0);
+	}else{
+		for(int i = 0; i < g_elements; i++){
+			result[i] = value;
+		}
 	}
+	
 	return result;
 }
 
@@ -260,11 +329,20 @@ float* sequence_matrix(float start, float step) {
 		       1 2
 		1 1 => 3 4
 	*/
-	result[g_elements] = 3.0;
+	//set_cache(result,M_SEQUENCE,1.0,value,value,value*g_elements,FLT_MIN,4*g_width);
+	result[CACHE_TYPE] = M_SEQUENCE;
 	
-	for(int i = 0; i < g_elements; i++){
-		result[i] = start+(step*i);
+	if(g_width > OPTIMIAL_THREAD && g_nthreads > 1){
+		void* (*functionPtr)(void*);
+		functionPtr = &sequence_thread;
+		int partition = g_elements / g_nthreads;
+		spawn_threads(functionPtr, NULL, result, partition, start, step);
+	}else{
+		for(int i = 0; i < g_elements; i++){
+			result[i] = start+(step*i);
+		}
 	}
+	
 	return result;
 }
 
@@ -279,9 +357,7 @@ float* cloned(const float* matrix) {
 
 	float* result = empty_matrix();
 	
-	result[g_elements] = matrix[g_elements];
-	// TODO: Fix
-	//memcpy(result, matrix, sizeof(float)*g_elements);
+	memcpy(result, matrix, sizeof(float)*(g_elements+CACHE_SIZE));
 
 	return result;
 }
@@ -291,9 +367,6 @@ float* cloned(const float* matrix) {
  * Returns new matrix with elements in ascending order. DONE!!
  */
 float* sorted(const float* matrix) {
-
-	
-
 	/*
 		3 4    1 2
 		2 1 => 3 4
@@ -301,10 +374,10 @@ float* sorted(const float* matrix) {
 	*/
 	float* result = cloned(matrix);
 	// clone and sort clone
-	if(matrix[g_elements] == 2.0 || matrix[g_elements] == 4.0){
+	if(matrix[g_elements] == M_UNIFORM || matrix[g_elements] == M_SORTED){
 		return result;
 	}else{
-		result[g_elements] = 4.0;
+		result[g_elements] = M_SORTED;
 		qsort(result, g_elements, sizeof(float), sortcmp);
 		return result;
 	}
@@ -328,6 +401,9 @@ float* rotated(const float* matrix) {
 		7 8 9 => 9 6 3
 		
 	*/
+	
+	result[CACHE_TYPE] = M_RANDOM;
+	
 	for(int row=0; row < g_width; row++){
 		for(int col=0; col < g_width; col++){
 			result[row*g_width+col] = matrix[(g_width-col-1)*g_width+(row)];
@@ -348,6 +424,8 @@ float* reversed(const float* matrix) {
 		1 2    4 3
 		3 4 => 2 1
 	*/
+	result[CACHE_TYPE] = M_RANDOM;
+	
 	int last = g_elements - 1;
 	for(int i = 0; i < g_elements; i++){
 		result[i] = matrix[last-i];
@@ -369,6 +447,8 @@ float* transposed(const float* matrix) {
 		1 2    1 3
 		3 4 => 2 4
 	*/
+	
+	result[CACHE_TYPE] = M_RANDOM;
 	
 	for(int row=0; row < g_width; row++){
 		for(int col=0; col < g_width; col++){
@@ -617,9 +697,9 @@ float get_sum(const float* matrix) {
 		1 1
 		1 1 => 4
 	*/
-	if(matrix[g_elements] == 1.0) return g_width;
-	else if(matrix[g_elements] == 2.0) return matrix[0]*g_elements;
-	else if(matrix[g_elements] == 3.0) return ((g_elements/2.0)*(matrix[0]+matrix[g_elements-1]));
+	if(matrix[g_elements] == M_IDENTITY) return g_width;
+	else if(matrix[g_elements] == M_UNIFORM) return matrix[0]*g_elements;
+	else if(matrix[g_elements] == M_SEQUENCE) return ((g_elements/2.0)*(matrix[0]+matrix[g_elements-1]));
 	else{
 		float sum = 0;
 		for(int i = 0; i < g_elements; i++){
@@ -642,8 +722,8 @@ float get_trace(const float* matrix) {
 		2 1
 		1 2 => 4
 	*/
-	if(matrix[g_elements] == 1.0) return g_width;
-	else if(matrix[g_elements] == 2.0) return matrix[0]*g_width;
+	if(matrix[g_elements] == M_IDENTITY) return g_width;
+	else if(matrix[g_elements] == M_UNIFORM) return matrix[0]*g_width;
 	else if(g_width == 1) return matrix[0];
 	else{
 		float sum = 0;
@@ -666,10 +746,10 @@ float get_minimum(const float* matrix) {
 		4 3
 		2 1 => 1
 	*/
-	if(matrix[g_elements] == 1.0) return 0.0;
-	else if(matrix[g_elements] == 2.0) return matrix[0];
-	else if(matrix[g_elements] == 3.0) return matrix[0];
-	else if(matrix[g_elements] == 4.0) return matrix[0];
+	if(matrix[g_elements] == M_IDENTITY) return 0.0;
+	else if(matrix[g_elements] == M_UNIFORM) return matrix[0];
+	else if(matrix[g_elements] == M_SEQUENCE) return matrix[0];
+	else if(matrix[g_elements] == M_SORTED) return matrix[0];
 	else{
 		float min = matrix[0];
 		for(int i = 0; i < g_elements; i++){
@@ -693,10 +773,10 @@ float get_maximum(const float* matrix) {
 		4 3
 		2 1 => 4
 	*/
-	if(matrix[g_elements] == 1.0) return 1.0;
-	else if(matrix[g_elements] == 2.0) return matrix[0];
-	else if(matrix[g_elements] == 3.0) return matrix[g_elements-1];
-	else if(matrix[g_elements] == 4.0) return matrix[g_elements-1];
+	if(matrix[g_elements] == M_IDENTITY) return 1.0;
+	else if(matrix[g_elements] == M_UNIFORM) return matrix[0];
+	else if(matrix[g_elements] == M_SEQUENCE) return matrix[g_elements-1];
+	else if(matrix[g_elements] == M_SORTED) return matrix[g_elements-1];
 	else{
 		float max = matrix[0];
 		for(int i = 0; i < g_elements; i++){
