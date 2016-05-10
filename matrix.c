@@ -62,7 +62,7 @@ void spawn_threads(void*(*funcptr)(void*), float* matrix, float* result, int par
 		start = (id*partition);
 		end = partition + (id*partition);
 		
-		printf("thread: %d || start: %d || end: %d\n", id, start, end);
+		//printf("thread: %d || start: %d || end: %d\n", id, start, end);
 		
 		args[id] = (thdata) {
 			.thread_id = id,
@@ -250,7 +250,7 @@ float* identity_matrix(void) {
 	*/
 	//set_cache(result,M_IDENTITY,0.0,0.0,1.0,g_width,1.0,g_width);
 	
-	//result[CACHE_TYPE] = M_IDENTITY;
+	result[CACHE_TYPE] = M_IDENTITY;
 	
 	if(g_width > OPTIMIAL_THREAD && g_nthreads > 1){
 		void* (*functionPtr)(void*);
@@ -278,7 +278,7 @@ float* random_matrix(int seed) {
 	set_seed(seed);
 	
 	//set_cache(result,M_RANDOM,0.0,FLT_MAX,FLT_MIN,FLT_MIN,FLT_MIN,FLT_MIN);
-	//matrix[CACHE_TYPE] = M_RANDOM;
+	matrix[CACHE_TYPE] = M_RANDOM;
 	
 	for (ssize_t i = 0; i < g_elements; i++) {
 		matrix[i] = fast_rand();
@@ -300,7 +300,7 @@ float* uniform_matrix(float value) {
 	*/
 
 	//set_cache(result,M_UNIFORM,1.0,value,value,value*g_elements,FLT_MIN,4*g_width);
-	//result[CACHE_TYPE] = M_UNIFORM;
+	result[CACHE_TYPE] = M_UNIFORM;
 	
 	if(g_width > OPTIMIAL_THREAD && g_nthreads > 1){
 		void* (*functionPtr)(void*);
@@ -330,7 +330,7 @@ float* sequence_matrix(float start, float step) {
 		1 1 => 3 4
 	*/
 	//set_cache(result,M_SEQUENCE,1.0,value,value,value*g_elements,FLT_MIN,4*g_width);
-	//result[CACHE_TYPE] = M_SEQUENCE;
+	result[CACHE_TYPE] = M_SEQUENCE;
 	
 	if(g_width > OPTIMIAL_THREAD && g_nthreads > 1){
 		void* (*functionPtr)(void*);
@@ -364,7 +364,7 @@ float* cloned(const float* matrix) {
 
 
 /**
- * Returns new matrix with elements in ascending order. DONE!!
+ * Returns new matrix with elements in ascending order.
  */
 float* sorted(const float* matrix) {
 	/*
@@ -402,7 +402,7 @@ float* rotated(const float* matrix) {
 		
 	*/
 	
-	//result[CACHE_TYPE] = M_RANDOM;
+	result[CACHE_TYPE] = M_RANDOM;
 	
 	for(int row=0; row < g_width; row++){
 		for(int col=0; col < g_width; col++){
@@ -424,7 +424,7 @@ float* reversed(const float* matrix) {
 		1 2    4 3
 		3 4 => 2 1
 	*/
-	//result[CACHE_TYPE] = M_RANDOM;
+	result[CACHE_TYPE] = M_RANDOM;
 	
 	int last = g_elements - 1;
 	for(int i = 0; i < g_elements; i++){
@@ -446,7 +446,7 @@ float* transposed(const float* matrix) {
 		3 4 => 2 4
 	*/
 	
-	//result[CACHE_TYPE] = M_RANDOM;
+	result[CACHE_TYPE] = M_RANDOM;
 	
 	for(int row=0; row < g_width; row++){
 		for(int col=0; col < g_width; col++){
@@ -463,7 +463,7 @@ float* transposed(const float* matrix) {
 float* scalar_add(const float* matrix, float scalar) {
 
 	float* result = empty_matrix();
-	//result[CACHE_TYPE] = matrix[CACHE_TYPE];
+	result[CACHE_TYPE] = matrix[CACHE_TYPE];
 	/*
 		1 0        2 1
 		0 1 + 1 => 1 2
@@ -484,7 +484,7 @@ float* scalar_add(const float* matrix, float scalar) {
 float* scalar_mul(const float* matrix, float scalar) {
 
 	float* result = empty_matrix();
-	//result[CACHE_TYPE] = matrix[CACHE_TYPE];
+	result[CACHE_TYPE] = matrix[CACHE_TYPE];
 	/*
 		1 0        2 0
 		0 1 x 2 => 0 2
@@ -507,7 +507,7 @@ float* scalar_mul(const float* matrix, float scalar) {
 float* matrix_add(const float* matrix_a, const float* matrix_b) {
 
 	float* result = empty_matrix();
-	//result[CACHE_TYPE] = M_RANDOM;
+	result[CACHE_TYPE] = M_RANDOM;
 	/*
 		1 0   0 1    1 1
 		0 1 + 1 0 => 1 1
@@ -540,10 +540,8 @@ int min(const int a, const int b){
 float* matrix_mul(const float* matrix_a, const float* matrix_b) {
 
 	float* result = empty_matrix();
-	//result[CACHE_TYPE] = M_RANDOM;
+	result[CACHE_TYPE] = M_RANDOM;
 	/*
-		TODO
-
 		1 2   1 0    1 2
 		3 4 x 0 1 => 3 4
 
@@ -618,7 +616,7 @@ float* matrix_pow(const float* matrix, int exponent) {
 			free(result);
 			result = temp;
 		}
-		//result[CACHE_TYPE] = M_RANDOM;
+		result[CACHE_TYPE] = M_RANDOM;
 	}
 
 	return result;
@@ -633,7 +631,7 @@ float* matrix_conv(const float* matrix, const float* kernel) {
 
 	float* result = new_matrix();
 	
-	//result[CACHE_TYPE] = M_RANDOM;
+	result[CACHE_TYPE] = M_RANDOM;
 
 	/*
 		Convolution is the process in which the values of a matrix are
@@ -699,16 +697,16 @@ float get_sum(const float* matrix) {
 		1 1
 		1 1 => 4
 	*/
-	//if(matrix[g_elements] == M_IDENTITY) return g_width;
-	//else if(matrix[g_elements] == M_UNIFORM) return matrix[0]*g_elements;
-	//else if(matrix[g_elements] == M_SEQUENCE) return ((g_elements/2.0)*(matrix[0]+matrix[g_elements-1]));
-	//else{
+	if(matrix[g_elements] == M_IDENTITY) return g_width;
+	else if(matrix[g_elements] == M_UNIFORM) return matrix[0]*g_elements;
+	else if(matrix[g_elements] == M_SEQUENCE) return ((g_elements/2.0)*(matrix[0]+matrix[g_elements-1]));
+	else{
 		float sum = 0;
 		for(int i = 0; i < g_elements; i++){
 			sum += matrix[i];
 		}
 		return sum;
-	//}
+	}
 	
 }
 
@@ -724,16 +722,16 @@ float get_trace(const float* matrix) {
 		2 1
 		1 2 => 4
 	*/
-	//if(matrix[CACHE_TYPE] == M_IDENTITY) return g_width;
-	//else if(matrix[CACHE_TYPE] == M_UNIFORM) return matrix[0]*g_width;
-	//else if(g_width == 1) return matrix[0];
-	//else{
+	if(matrix[CACHE_TYPE] == M_IDENTITY) return g_width;
+	else if(matrix[CACHE_TYPE] == M_UNIFORM) return matrix[0]*g_width;
+	else if(g_width == 1) return matrix[0];
+	else{
 		float sum = 0;
 		for(int i = 0; i < g_width; i++){
 			sum += matrix[i * g_width + i];
 		}
 		return sum;
-	//}
+	}
 }
 
 /**
@@ -748,11 +746,11 @@ float get_minimum(const float* matrix) {
 		4 3
 		2 1 => 1
 	*/
-	//if(matrix[CACHE_TYPE] == M_IDENTITY) return 0.0;
-	//else if(matrix[CACHE_TYPE] == M_UNIFORM) return matrix[0];
-	//else if(matrix[CACHE_TYPE] == M_SEQUENCE) return matrix[0];
-	//else if(matrix[CACHE_TYPE] == M_SORTED) return matrix[0];
-	//else{
+	if(matrix[CACHE_TYPE] == M_IDENTITY) return 0.0;
+	else if(matrix[CACHE_TYPE] == M_UNIFORM) return matrix[0];
+	else if(matrix[CACHE_TYPE] == M_SEQUENCE) return matrix[0];
+	else if(matrix[CACHE_TYPE] == M_SORTED) return matrix[0];
+	else{
 		float min = matrix[0];
 		for(int i = 0; i < g_elements; i++){
 			if(matrix[i]<min){
@@ -760,7 +758,7 @@ float get_minimum(const float* matrix) {
 			}
 		}
 		return min;
-	//}	
+	}	
 }
 
 /**
@@ -775,11 +773,11 @@ float get_maximum(const float* matrix) {
 		4 3
 		2 1 => 4
 	*/
-	//if(matrix[CACHE_TYPE] == M_IDENTITY) return 1.0;
-	//else if(matrix[CACHE_TYPE] == M_UNIFORM) return matrix[0];
-	//else if(matrix[CACHE_TYPE] == M_SEQUENCE) return matrix[g_elements-1];
-	//else if(matrix[CACHE_TYPE] == M_SORTED) return matrix[g_elements-1];
-	//else{
+	if(matrix[CACHE_TYPE] == M_IDENTITY) return 1.0;
+	else if(matrix[CACHE_TYPE] == M_UNIFORM) return matrix[0];
+	else if(matrix[CACHE_TYPE] == M_SEQUENCE) return matrix[g_elements-1];
+	else if(matrix[CACHE_TYPE] == M_SORTED) return matrix[g_elements-1];
+	else{
 		float max = matrix[0];
 		for(int i = 0; i < g_elements; i++){
 			if(matrix[i]>max){
@@ -787,7 +785,7 @@ float get_maximum(const float* matrix) {
 			}
 		}
 		return max;
-	//}	
+	}	
 }
 
 
