@@ -506,7 +506,7 @@ float* matrix_conv(const float* matrix, const float* kernel) {
 			//   moving along the kernel one at a time.
 			//  Kernel starts in it's top corner.
 						
-			
+			sum = 0;
 			for(int c_row=0; c_row < width_kernel; c_row++){
 				for(int c_col=0; c_col < width_kernel; c_col++){
 					// account for padding / over hang
@@ -529,21 +529,24 @@ float* matrix_conv(const float* matrix, const float* kernel) {
 						// if((c_row == 0 || c_row == 1) && c_col == 0) pixel = (0*g_width+0); // corner + above
 						// if(c_row && c_col == 1) pixel = 
 						
-					// }
+					// }]
+					offset_col = 0;
+					offset_row = 0;
+					if( row == 0 && c_row == 0) offset_row = 1;  // whole top row
+					if( row == g_width-1 && c_row == 2) offset_row = -1; // whole bottom row
+					//if( c_row < 2 && row == 0 && col == 0) offset_col = -1;  // top left
 					
+					if( col == 0 && c_col == 0) offset_col = 1; //whole left side
+					if( col == g_width-1 && c_col == 2) offset_col = -1; // whole right side
 					
-					if(row > 0) offset_row = 0;
-					else offset_row = 1;
+					if( row > 0 && row < g_width-1 && col > 0 && col < g_width-1){
+						// everything on the inside of the grid.
+						offset_col = 0;
+						offset_row = 0;
+					}
+
 					
-					if(row < g_width-1) offset_row = 0;
-					else offset_row = -1;
-					
-					if(col > 0) offset_col = 0;
-					else offset_col = 1;
-					
-					if(col < g_width-1) offset_col = 0;
-					else offset_col = -1;
-					
+					//offset_row = 100;
 					
 					printf("Element: %f  ||  kernel (%d, %d)  || matrix (%d, %d) || centre (%d, %d)||\n True %f|| offsets: %d, %d\n", 
 								matrix[(row+c_row-1+offset_row) * g_width + (col+c_col-1+offset_col)],
