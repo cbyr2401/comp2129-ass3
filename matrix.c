@@ -8,7 +8,7 @@
 
 #include "matrix.h"
 
-#define OPTIMIAL_THREAD 32
+#define OPTIMIAL_THREAD 10
 
 #define M_IDENTITY 1.0
 #define M_SEQUENCE 2.0
@@ -66,7 +66,7 @@ void spawn_threads(void*(*funcptr)(void*), const float* matrix, float* result, i
 		
 		args[id] = (thdata) {
 			.thread_id = id,
-			.matrix = NULL,
+			.matrix = matrix,
 			.result = result,
 			.start = start,
 			.end = end,
@@ -164,10 +164,11 @@ void* sequence_thread(void* argv){
 
 void* scalar_mul_thread(void* argv){
 	thdata* data = (thdata*) argv;
-	float scalar = data->value;
 	
+	float scalar = data->value;
+		
 	for(int i = data->start; i < data->end; i++){
-		data->result[i] = data->matrix[i] * scalar;
+		data->result[i] = (data->matrix[i])*scalar;
 	}
 	
 	return NULL;
@@ -562,8 +563,9 @@ float* scalar_mul(const float* matrix, float scalar) {
 		void* (*functionPtr)(void*);
 		functionPtr = &scalar_mul_thread;
 		int partition = g_elements / g_nthreads;
-		spawn_threads(functionPtr, matrix, result, partition, scalar, 0);
+		spawn_threads(functionPtr, matrix, result, partition, scalar, 0.0);
 	}else{
+		
 		for(int i = 0; i < g_elements; i++){
 			result[i] = matrix[i] * scalar;
 		}
@@ -643,7 +645,7 @@ float* matrix_mul(const float* matrix_a, const float* matrix_b) {
 		// }
 	// }
 	
-	if(g_width > OPTIMIAL_THREAD-20 && g_nthreads > 1){
+	if(g_width > OPTIMIAL_THREAD-10 && g_nthreads > 1){
 		void* (*functionPtr)(void*);
 		functionPtr = &matrix_mul_thread;
 		int partition = g_width / g_nthreads;
