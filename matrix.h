@@ -74,8 +74,16 @@ struct thread_mul{
 	int end;
 };
 
+// struct thread_calc{
+	// int thread_id;
+	// int start;
+	// int end;
+	// float result;
+// };
+
 typedef struct thread_data thdata;
 typedef struct thread_mul thmuldata;
+//typedef struct thread_calc thcalcdata;
 
 void spawn_threads(void*(*funcptr)(void*), const float* matrix, float* result, int partition, float value, float step);
 void spawn_threads_mul(void*(*funcptr)(void*), const float* matrix_a, const float* matrix_b, float* result, int partition);

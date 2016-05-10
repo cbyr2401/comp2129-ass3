@@ -8,7 +8,7 @@
 
 #include "matrix.h"
 
-#define OPTIMIAL_THREAD 10
+#define OPTIMIAL_THREAD 12
 
 #define M_IDENTITY 1.0
 #define M_SEQUENCE 2.0
@@ -174,6 +174,20 @@ void* scalar_mul_thread(void* argv){
 	return NULL;
 }
 
+void* scalar_add_thread(void* argv){
+	thdata* data = (thdata*) argv;
+	
+	float scalar = data->value;
+		
+	for(int i = data->start; i < data->end; i++){
+		data->result[i] = (data->matrix[i])+scalar;
+	}
+	
+	return NULL;
+}
+
+
+
 void* matrix_mul_thread(void* argv){
 	thmuldata* data = (thmuldata*) argv;
 	
@@ -187,6 +201,16 @@ void* matrix_mul_thread(void* argv){
 			}
 			data->result[i * g_width + j] = sum;
 		}
+	}
+	
+	return NULL;
+}
+
+void* matrix_add_thread(void* argv){
+	thmuldata* data = (thmuldata*) argv;
+	
+	for(int i=data->start; i < data->end; i++){
+		data->result[i] = data->matrix_a[i] + data->matrix_b[i];
 	}
 	
 	return NULL;
@@ -538,8 +562,17 @@ float* scalar_add(const float* matrix, float scalar) {
 		1 2        5 6
 		3 4 + 4 => 7 8
 	*/
-	for(int i = 0; i < g_elements; i++){
-		result[i] = matrix[i] + scalar;
+	
+	if(g_width > OPTIMIAL_THREAD && g_nthreads > 1){
+		void* (*functionPtr)(void*);
+		functionPtr = &scalar_add_thread;
+		int partition = g_elements / g_nthreads;
+		spawn_threads(functionPtr, matrix, result, partition, scalar, 0.0);
+	}else{
+		
+		for(int i = 0; i < g_elements; i++){
+			result[i] = matrix[i] + scalar;
+		}
 	}
 
 	return result;
@@ -590,10 +623,18 @@ float* matrix_add(const float* matrix_a, const float* matrix_b) {
 		1 2   4 4    5 6
 		3 4 + 4 4 => 7 8
 	*/
-	
-	for(int i = 0; i < g_elements; i++){
-		result[i] = matrix_a[i] + matrix_b[i];
+	if(g_width > OPTIMIAL_THREAD-10 && g_nthreads > 1){
+		void* (*functionPtr)(void*);
+		functionPtr = &matrix_add_thread;
+		int partition = g_elements / g_nthreads;
+		spawn_threads_mul(functionPtr, matrix_a, matrix_b, result, partition);
+	}else{
+		
+		for(int i = 0; i < g_elements; i++){
+			result[i] = matrix_a[i] + matrix_b[i];
+		}
 	}
+	
 
 	return result;
 }
@@ -623,7 +664,7 @@ float* matrix_mul(const float* matrix_a, const float* matrix_b) {
 		1 2   5 6    19 22
 		3 4 x 7 8 => 43 50
 	*/
-	float sum;
+	
 	//int tile_size = (int)sqrt(g_width);
 
 	//second method - still very slow... fixes cache misses for row-major
@@ -652,6 +693,7 @@ float* matrix_mul(const float* matrix_a, const float* matrix_b) {
 		spawn_threads_mul(functionPtr, matrix_a, matrix_b, result, partition);
 	}else{
 		// very slow method
+		float sum;
 		for(int i=0; i < g_width; i++){
 			for(int j=0; j < g_width; j++){
 				sum = 0;
@@ -789,7 +831,6 @@ float get_sum(const float* matrix) {
 		}
 		return sum;
 	}
-	
 }
 
 /**
