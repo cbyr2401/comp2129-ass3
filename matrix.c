@@ -483,18 +483,6 @@ float* matrix_conv(const float* matrix, const float* kernel) {
 		neighbours, where the weights are given by the kernel matrix.
 	*/
 	int sum = 0;
-	// for(int row = 0; row < g_width; row++){
-		// for(int pixel = 0; pixel < g_width; pixel++){
-			// sum = 0;
-			// for(int krow = 0; krow < 3; krow++){
-				// for(int element = 0; element < 3; element++){
-					// if(row+krow < 0)
-					// sum += kernel[krow*3+element] * matrix[(row+krow-1)*g_width+(pixel+element-1)];
-				// }
-			// }
-			// result[row*g_width+pixel] = sum;
-		// }
-	// }
 	int width_kernel = 3;
 	int offset_col = 0;
 	int offset_row = 0;
@@ -511,25 +499,7 @@ float* matrix_conv(const float* matrix, const float* kernel) {
 				for(int c_col=0; c_col < width_kernel; c_col++){
 					// account for padding / over hang
 					// account for fact that kernel needs to be over the centre of the matrix
-					
-					/*
-					 Cases...
-					 1) middle
-					 2) top row
-					 3) bottom row
-					 4) left side
-					 5) right side
-					 6) corners
-					
-					
-					*/
-					// int pixel;
-					
-					// if(row == 0 && col == 0){
-						// if((c_row == 0 || c_row == 1) && c_col == 0) pixel = (0*g_width+0); // corner + above
-						// if(c_row && c_col == 1) pixel = 
-						
-					// }]
+
 					offset_col = 0;
 					offset_row = 0;
 					if( row == 0 && c_row == 0) offset_row = 1;  // whole top row
@@ -537,34 +507,13 @@ float* matrix_conv(const float* matrix, const float* kernel) {
 					//if( c_row < 2 && row == 0 && col == 0) offset_col = -1;  // top left
 					
 					if( col == 0 && c_col == 0) offset_col = 1; //whole left side
-					if( col == g_width-1 && c_col == 2) offset_col = -1; // whole right side
-					
-					if( row > 0 && row < g_width-1 && col > 0 && col < g_width-1){
-						// everything on the inside of the grid.
-						offset_col = 0;
-						offset_row = 0;
-					}
+					if( col == g_width-1 && c_col == 2) offset_col = -1; // whole right side					
 
-					
-					//offset_row = 100;
-					
-					printf("Element: %f  ||  kernel (%d, %d)  || matrix (%d, %d) || centre (%d, %d)||\n True %f|| offsets: %d, %d\n", 
-								matrix[(row+c_row-1+offset_row) * g_width + (col+c_col-1+offset_col)],
-								c_row,
-								c_col,
-								row+c_row-1+offset_row,
-								col+c_col-1+offset_col,
-								row,
-								col,
-								matrix[row*g_width+col],
-								offset_row,
-								offset_col
-					);
 					/*
-					  1  2  3  4
-					  5  6  7  8
-					  9  10 11 12
-					  13 14 15 16
+					  1  2  3  4				-4 -2 -1  1
+					  5  6  7  8				 4  6  7  9
+					  9  10 11 12				 8  10 11 13
+					  13 14 15 16 :: sharpen =>  16 18 19 21
 					
 					*/
 					
