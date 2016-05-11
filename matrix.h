@@ -65,15 +65,15 @@ typedef struct {
 	float* result;
 	int start;
 	int end;
-	int value;
+	float value;
 } d_umthread;
 
 typedef struct {
 	float* result;
 	int start;
 	int end;
-	int initial;
-	int step;
+	float initial;
+	float step;
 } d_smthread;
 
 typedef struct {
