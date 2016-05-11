@@ -54,9 +54,10 @@ void spawn_threads(void*(*funcptr)(void*), thread_args argv){
 	
 	pthread_t thread_ids[g_nthreads];
 	void* args = NULL;
+	
 	int start = 0;
 	int end;
-	printf("main shreder: %f\n", argv.partition);
+	
 	float* result = argv.result;
 	int partition = argv.partition;
 	thread_type method = argv.type;
@@ -68,7 +69,7 @@ void spawn_threads(void*(*funcptr)(void*), thread_args argv){
 		for(int id=0; id < g_nthreads; id++){
 			start = (id*partition);
 			end = partition + (id*partition);
-							
+			
 			((d_mthread*)args)[id] = (d_mthread) {
 				.result = result,
 				.start = start,
@@ -139,7 +140,7 @@ void spawn_threads(void*(*funcptr)(void*), thread_args argv){
 		}
 	}
 	else if(method == SMTHREAD){
-		args = (d_smthread*)malloc(sizeof(d_smthread)*g_nthreads);
+		args = (void*)malloc(sizeof(d_smthread)*g_nthreads);
 		incre = sizeof(d_smthread);
 		for(int id=0; id < g_nthreads; id++){
 			start = (id*partition);
@@ -159,7 +160,8 @@ void spawn_threads(void*(*funcptr)(void*), thread_args argv){
 	
 	// launch threads
 	for (int i = 0; i < g_nthreads; i++) {
-		pthread_create(thread_ids + i, NULL, funcptr, args + (incre*i));
+		printf("address: %p\n", args+(incre*i));
+		pthread_create(thread_ids + i, NULL, funcptr, args+(incre*i) );
 	}
 	
 	free(args);
@@ -213,6 +215,8 @@ void* sequence_thread(void* argv){
 	
 	float initial = data->initial;
 	float step = data->step;
+	
+	//printf("check: a%d b%d c%f d%f\n", start, end, initial, step);
 	
 	for(int i = start; i < end; i++){
 		data->result[i] = initial + (step*i);
