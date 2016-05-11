@@ -55,73 +55,111 @@ int sortcmp(const void * a, const void * b);
 int min(const int a, const int b);
 
 // thread structs (defined in typedef below)
+struct d_imthread{
+	float* result;
+	int start;
+	int end;
+};
+
+struct d_umthread{
+	float* result;
+	int start;
+	int end;
+	int value;
+};
+
+struct d_smthread{
+	float* result;
+	int start;
+	int end;
+	int initial;
+	int step;
+};
+
+struct d_mthread{
+	float* result;
+	const float* matrix_a;
+	const float* matrix_b;
+	int start;
+	int end;
+};
+
+struct d_othread{
+	float* result;
+	const float* matrix;
+	int start;
+	int end;
+}
+
+struct d_sthread{
+	float* result;
+	const float* matrix;
+	float value;
+	int start;
+	int end;
+}
 
 struct thread_args{
 	int partition;
 	thread_type type;
+	float* result;
 	
-	union {
-		struct {
-			float* result;
-			int start;
-			int end;
-		} d_imthread;
-		
-		struct {
-			float* result;
-			int start;
-			int end;
-			int value;
-		} d_umthread;
-		
-		struct {
-			float* result;
-			int start;
-			int end;
-			int initial;
-			int step;
-		} d_smthread;
-		
-		struct {
-			float* result;
+	union{
+		struct
+		{
 			const float* matrix_a;
 			const float* matrix_b;
-			int start;
-			int end;
-		} d_mthread;
+		} matrix;
 		
-		struct {
-			float* result;
+		struct
+		{
 			const float* matrix;
-			int start;
-			int end;
-		} d_othread;
+			float scalar;
+		} scalar;
 		
-		struct {
-			float* result;
+		struct
+		{
 			const float* matrix;
+			const float* kernel;
+		} conv;
+		
+		struct
+		{
+			float* matrix;
+		} operation;
+		
+		struct
+		{
+			float initial;
+			float step;
+		} sequence;
+		
+		struct
+		{
 			float value;
-			int start;
-			int end;
-		} d_sthread;
-	} element;
+		} uniform;
+	} args;
 }
+
+
 
 enum thread_data_types{
 	MTHREAD, STHREAD, OTHREAD, IMTHREAD, UMTHREAD, SMTHREAD
 }
 
-// typedef struct d_mthread d_mthread; // matrix mul
-// typedef struct d_sthread d_sthread; // scalar mul + add
-// typedef struct d_othread d_othread; // operations
-// typedef struct d_imthread d_imthread; // identity matrix
-// typedef struct d_umthread d_umthread; // uniform matrix
-// typedef struct d_smthread d_smthread; // sequence matrix
-// typedef struct d_spawn d_spawn; // metadata for spawning thread
+typedef struct d_mthread d_mthread; // matrix mul
+typedef struct d_sthread d_sthread; // scalar mul + add
+typedef struct d_othread d_othread; // operations
+typedef struct d_imthread d_imthread; // identity matrix
+typedef struct d_umthread d_umthread; // uniform matrix
+typedef struct d_smthread d_smthread; // sequence matrix
+typedef struct d_spawn d_spawn; // metadata for spawning thread
 typedef enum thread_data_types thread_type; // type of thread struct to use
+
 typedef struct thread_args thread_args;
 
-void spawn_threads(void*(*funcptr)(void*), d_spawn* argv);
+
+void spawn_threads(void*(*funcptr)(void*), thread_args argv);
 void* identity_thread(void* argv);
 void* uniform_thread(void* argv);
 void* sequence_thread(void* argv);
