@@ -52,102 +52,110 @@ static ssize_t g_nthreads = 1;
 // threads for void* make_matrix(void) operations.
 void spawn_threads(void*(*funcptr)(void*), thread_args argv){
 	
-	
 	pthread_t thread_ids[g_nthreads];
-	
+	void* args = NULL;
 	int start = 0;
 	int end;
 	
-	float* result = argv->result;
-	int partition = argv->partition;
-	thread_type type = argv->type;
+	float* result = argv.result;
+	int partition = argv.partition;
+	thread_type method = argv.type;
 	
-	switch(type):
-		case MTHREAD:
-			d_mthread args[g_nthreads];
-			for(int id=0; id < g_nthreads; id++){
-				start = (id*partition);
-				end = partition + (id*partition);
-								
-				args[id] = (d_mthread) {
-					.result = result,
-					.start = start,
-					.end = end,
-					.matrix_a = argv->args->matrix->matrix_a,
-					.matrix_b = argv->args->matrix->matrix_b,
-				};
-			}
-		case STHREAD:
-			d_sthread args[g_nthreads];
-			for(int id=0; id < g_nthreads; id++){
-				start = (id*partition);
-				end = partition + (id*partition);
-								
-				args[id] = (d_sthread) {
-					.result = result,
-					.start = start,
-					.end = end,
-					.value = argv->args->scalar->value,
-					.matrix = argv->args->scalar->matrix,
-				};
-			}
-		case OTHREAD:
-			d_othread args[g_nthreads];
-			for(int id=0; id < g_nthreads; id++){
-				start = (id*partition);
-				end = partition + (id*partition);
-								
-				args[id] = (d_othread) {
-					.result = result,
-					.start = start,
-					.end = end,
-					.matrix = argv->args->operation->matrix,
-				};
-			}
-		case IMTHREAD:
-			d_imthread args[g_nthreads];
-			for(int id=0; id < g_nthreads; id++){
-				start = (id*partition);
-				end = partition + (id*partition);
-								
-				args[id] = (d_imthread) {
-					.result = result,
-					.start = start,
-					.end = end,
-				};
-			}
-		case UMTHREAD:
-			d_umthread args[g_nthreads];
-			for(int id=0; id < g_nthreads; id++){
-				start = (id*partition);
-				end = partition + (id*partition);
-								
-				args[id] = (d_umthread) {
-					.result = result,
-					.start = start,
-					.end = end,
-					.value = argv->args->uniform->value,
-				};
-			}
-		case SMTHREAD:
-			d_smthread args[g_nthreads];
-			for(int id=0; id < g_nthreads; id++){
-				start = (id*partition);
-				end = partition + (id*partition);
-								
-				args[id] = (d_smthread) {
-					.result = result,
-					.start = start,
-					.end = end,
-					.initial = argv->args->sequence->initial,
-					.step = argv->args->sequence->step,
-				};
-			}
+	if(method == MTHREAD){
+		args = malloc(sizeof(d_mthread)*g_nthreads);
+		for(int id=0; id < g_nthreads; id++){
+			start = (id*partition);
+			end = partition + (id*partition);
+							
+			args[id] = (d_mthread) {
+				.result = result,
+				.start = start,
+				.end = end,
+				.matrix_a = argv.args.matrix.matrix_a,
+				.matrix_b = argv.args.matrix.matrix_b,
+			};
+		}
+	}
+	else if(method == STHREAD){
+		args = malloc(sizeof(d_sthread)*g_nthreads);
+		for(int id=0; id < g_nthreads; id++){
+			start = (id*partition);
+			end = partition + (id*partition);
+							
+			args[id] = (d_sthread) {
+				.result = result,
+				.start = start,
+				.end = end,
+				.value = argv.args.scalar.scalar,
+				.matrix = argv.args.scalar.matrix,
+			};
+		}
+	}
+	else if(method == OTHREAD){
+		args = malloc(sizeof(d_othread)*g_nthreads);
+		for(int id=0; id < g_nthreads; id++){
+			start = (id*partition);
+			end = partition + (id*partition);
+							
+			args[id] = (d_othread) {
+				.result = result,
+				.start = start,
+				.end = end,
+				.matrix = argv.args.operation.matrix,
+			};
+		}
+		}
+	else if(method == IMTHREAD){
+		args = malloc(sizeof(d_imthread)*g_nthreads);
+		for(int id=0; id < g_nthreads; id++){
+			start = (id*partition);
+			end = partition + (id*partition);
+							
+			args[id] = (d_imthread) {
+				.result = result,
+				.start = start,
+				.end = end,
+			};
+		}
+	}
+	else if(method == UMTHREAD){
+		args = malloc(sizeof(d_umthread)*g_nthreads);
+		for(int id=0; id < g_nthreads; id++){
+			start = (id*partition);
+			end = partition + (id*partition);
+							
+			args[id] = (d_umthread) {
+				.result = result,
+				.start = start,
+				.end = end,
+				.value = argv.args.uniform.value,
+			};
+		}
+	}
+	else if(method == SMTHREAD){
+		args = malloc(sizeof(d_smthread)*g_nthreads);
+		for(int id=0; id < g_nthreads; id++){
+			start = (id*partition);
+			end = partition + (id*partition);
+							
+			args[id] = (d_smthread) {
+				.result = result,
+				.start = start,
+				.end = end,
+				.initial = argv.args.sequence.initial,
+				.step = argv.args.sequence.step,
+			};
+		}
+	}else{
+		return;
+	}
 	
 	// launch threads
 	for (int i = 0; i < g_nthreads; i++) {
 		pthread_create(thread_ids + i, NULL, funcptr, args + i);
 	}
+	
+	free(args);
 	
 	// wait for threads to finish
 	for (size_t i = 0; i < g_nthreads; i++) {
@@ -189,7 +197,7 @@ void* uniform_thread(void* argv){
 }
 
 void* sequence_thread(void* argv){
-	d_smthread* data = (d_smthread) argv;
+	d_smthread* data = (d_smthread*) argv;
 	
 	int start = data->start;
 	int end = data->end;
@@ -244,8 +252,8 @@ void* matrix_mul_thread(void* argv){
 	int start = data->start;
 	int end = data->end;
 	
-	float* matrix_a = data->matrix_a;
-	float* matrix_a = data->matrix_b;
+	const float* matrix_a = data->matrix_a;
+	const float* matrix_b = data->matrix_b;
 	float* result = data->result;
 	
 	float sum = 0;
@@ -269,11 +277,11 @@ void* matrix_add_thread(void* argv){
 	int start = data->start;
 	int end = data->end;
 	
-	float* matrix_a = data->matrix_a;
-	float* matrix_a = data->matrix_b;
+	const float* matrix_a = data->matrix_a;
+	const float* matrix_b = data->matrix_b;
 	float* result = data->result;
 	
-	for(int i=data->start; i < data->end; i++){
+	for(int i=start; i < end; i++){
 		result[i] = matrix_a[i] + matrix_b[i];
 	}
 	
@@ -411,7 +419,7 @@ float* identity_matrix(void) {
 		void* (*functionPtr)(void*);
 		functionPtr = &identity_thread;
 		int partition = g_width / g_nthreads;
-		thread_args data = {
+		thread_args data = (thread_args){
 				.result = result,
 				.partition = partition,
 				.type = IMTHREAD,
@@ -467,11 +475,11 @@ float* uniform_matrix(float value) {
 		void* (*functionPtr)(void*);
 		functionPtr = &uniform_thread;
 		int partition = g_elements / g_nthreads;
-		thread_args data = {
+		thread_args data = (thread_args){
 				.result = result,
 				.partition = partition,
 				.type = UMTHREAD,
-				.uniform.value = value,
+				.args.uniform.value = value,
 				};
 		
 		spawn_threads(functionPtr, data);
@@ -504,12 +512,12 @@ float* sequence_matrix(float start, float step) {
 		void* (*functionPtr)(void*);
 		functionPtr = &sequence_thread;
 		int partition = g_elements / g_nthreads;
-		thread_args data = {
+		thread_args data = (thread_args){
 				.result = result,
 				.partition = partition,
 				.type = SMTHREAD,
-				.sequence.initial = start,
-				.sequence.step = step,
+				.args.sequence.initial = start,
+				.args.sequence.step = step,
 				};
 		
 		spawn_threads(functionPtr, data);
@@ -652,12 +660,12 @@ float* scalar_add(const float* matrix, float scalar) {
 		void* (*functionPtr)(void*);
 		functionPtr = &scalar_add_thread;
 		int partition = g_elements / g_nthreads;
-		thread_args data = {
+		thread_args data = (thread_args){
 				.result = result,
 				.partition = partition,
 				.type = STHREAD,
-				.scalar.value = value,
-				.scalar.matrix = matrix,
+				.args.scalar.scalar = scalar,
+				.args.scalar.matrix = matrix,
 				};
 		
 		spawn_threads(functionPtr, data);
@@ -689,12 +697,12 @@ float* scalar_mul(const float* matrix, float scalar) {
 		void* (*functionPtr)(void*);
 		functionPtr = &scalar_mul_thread;
 		int partition = g_elements / g_nthreads;
-		thread_args data = {
+		thread_args data = (thread_args){
 				.result = result,
 				.partition = partition,
 				.type = STHREAD,
-				.scalar.value = value,
-				.scalar.matrix = matrix,
+				.args.scalar.scalar = scalar,
+				.args.scalar.matrix = matrix,
 				};
 		
 		spawn_threads(functionPtr, data);
@@ -728,12 +736,12 @@ float* matrix_add(const float* matrix_a, const float* matrix_b) {
 		void* (*functionPtr)(void*);
 		functionPtr = &matrix_add_thread;
 		int partition = g_elements / g_nthreads;
-		thread_args data = {
+		thread_args data = (thread_args){
 				.result = result,
 				.partition = partition,
 				.type = MTHREAD,
-				.matrix.matrix_a = matrix_a,
-				.matrix.matrix_b = matrix_b,
+				.args.matrix.matrix_a = matrix_a,
+				.args.matrix.matrix_b = matrix_b,
 				};
 		
 		spawn_threads(functionPtr, data);
@@ -799,12 +807,12 @@ float* matrix_mul(const float* matrix_a, const float* matrix_b) {
 		void* (*functionPtr)(void*);
 		functionPtr = &matrix_mul_thread;
 		int partition = g_width / g_nthreads;
-		thread_args data = {
+		thread_args data = (thread_args){
 				.result = result,
 				.partition = partition,
 				.type = MTHREAD,
-				.matrix.matrix_a = matrix_a,
-				.matrix.matrix_b = matrix_b,
+				.args.matrix.matrix_a = matrix_a,
+				.args.matrix.matrix_b = matrix_b,
 				};
 		
 		spawn_threads(functionPtr, data);
