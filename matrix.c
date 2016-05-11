@@ -162,6 +162,7 @@ void* sequence_thread(void* argv){
 	return NULL;
 }
 
+
 void* scalar_mul_thread(void* argv){
 	thdata* data = (thdata*) argv;
 	
@@ -194,12 +195,12 @@ void* matrix_mul_thread(void* argv){
 	float sum = 0;
 	
 	for(int i=data->start; i < data->end; i++){
-		for(int j=0; j < g_width; j++){
+		for(int k=0; k < g_width; k++){
 			sum = 0;
-			for(int k=0; k < g_width; k++){
+			for(int j=0; j < g_width; j++){
 				sum += (data->matrix_a[i * g_width + k]*data->matrix_b[k * g_width + j]);
 			}
-			data->result[i * g_width + j] = sum;
+			data->result[i * g_width + k] = sum;
 		}
 	}
 	
@@ -694,13 +695,15 @@ float* matrix_mul(const float* matrix_a, const float* matrix_b) {
 	}else{
 		// very slow method
 		float sum;
+		float t;
 		for(int i=0; i < g_width; i++){
-			for(int j=0; j < g_width; j++){
+			for(int k=0; k < g_width; k++){
 				sum = 0;
-				for(int k=0; k < g_width; k++){
-					sum += (matrix_a[i * g_width + k]*matrix_b[k * g_width + j]);
+				t = matrix_a[i * g_width + k];
+				for(int j=0; j < g_width; j++){
+					sum += (matrix_b[k * g_width + j]*t);
 				}
-				result[i * g_width + j] = sum;
+				result[i * g_width + k] = sum;
 			}
 		}
 	}
