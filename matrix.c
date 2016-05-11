@@ -26,7 +26,6 @@
 #define CACHE_DET (g_elements+5)
 #define CACHE_TRACE (g_elements+6)
 
-
 static int g_seed = 0;
 
 static ssize_t g_width = 0;
@@ -49,31 +48,91 @@ static ssize_t g_nthreads = 1;
 ////////////////////////////////
 ///    THREADING FUNCTIONS   ///
 ////////////////////////////////
+
 // threads for void* make_matrix(void) operations.
-void spawn_threads(void*(*funcptr)(void*), const float* matrix, float* result, int partition, float value, float step){
-	thdata args[g_nthreads];
+void spawn_threads(void*(*funcptr)(void*), void* argv, int partition){
+	
+	thread_args args[g_nthreads];
 	pthread_t thread_ids[g_nthreads];
 	
 	int start = 0;
-	int end;
+	int end;	
 	
-	// build args array
-	for(int id=0; id < g_nthreads; id++){
-		start = (id*partition);
-		end = partition + (id*partition);
-		
-		//printf("thread: %d || start: %d || end: %d\n", id, start, end);
-		
-		args[id] = (thdata) {
-			.thread_id = id,
-			.matrix = matrix,
-			.result = result,
-			.start = start,
-			.end = end,
-			.value = value,
-			.step = step,
-		};
-	}
+	switch(argv->type):
+		case MTHREAD:
+			
+			for(int id=0; id < g_nthreads; id++){
+				start = (id*argv->partition);
+				end = partition + (id*argv->partition);
+								
+				args[id] = (d_mthread) {
+					.result = result,
+					.start = start,
+					.end = end,
+				};
+			}
+		case STHREAD:
+			d_sthread args[g_nthreads];
+			for(int id=0; id < g_nthreads; id++){
+				start = (id*argv->partition);
+				end = partition + (id*argv->partition);
+								
+				args[id] = (d_sthread) {
+					.result = result,
+					.start = start,
+					.end = end,
+					.value = 
+					
+				};
+			}
+		case OTHREAD:
+			d_othread args[g_nthreads];
+			for(int id=0; id < g_nthreads; id++){
+				start = (id*argv->partition);
+				end = partition + (id*argv->partition);
+								
+				args[id] = (d_othread) {
+					.result = result,
+					.start = start,
+					.end = end,
+				};
+			}
+		case IMTHREAD:
+			d_imthread args[g_nthreads];
+			for(int id=0; id < g_nthreads; id++){
+				start = (id*argv->partition);
+				end = partition + (id*argv->partition);
+								
+				args[id] = (d_imthread) {
+					.result = result,
+					.start = start,
+					.end = end,
+				};
+			}
+		case UMTHREAD:
+			d_umthread args[g_nthreads];
+			for(int id=0; id < g_nthreads; id++){
+				start = (id*argv->partition);
+				end = partition + (id*argv->partition);
+								
+				args[id] = (d_umthread) {
+					.result = result,
+					.start = start,
+					.end = end,
+				};
+			}
+		case SMTHREAD:
+			d_smthread args[g_nthreads];
+			for(int id=0; id < g_nthreads; id++){
+				start = (id*argv->partition);
+				end = partition + (id*argv->partition);
+								
+				args[id] = (d_smthread) {
+					.result = result,
+					.start = start,
+					.end = end,
+				};
+			}
 	
 	// launch threads
 	for (int i = 0; i < g_nthreads; i++) {
@@ -85,43 +144,6 @@ void spawn_threads(void*(*funcptr)(void*), const float* matrix, float* result, i
 		pthread_join(thread_ids[i], NULL);
 	}
 }
-
-// spawn threads for matrix multiplication
-void spawn_threads_mul(void*(*funcptr)(void*), const float* matrix_a, const float* matrix_b, float* result, int partition){
-	thmuldata args[g_nthreads];
-	pthread_t thread_ids[g_nthreads];
-	
-	int start = 0;
-	int end;
-	
-	// build args array
-	for(int id=0; id < g_nthreads; id++){
-		start = (id*partition);
-		end = partition + (id*partition);
-		
-		//printf("thread: %d || start: %d || end: %d\n", id, start, end);
-		
-		args[id] = (thmuldata) {
-			.thread_id = id,
-			.matrix_a = matrix_a,
-			.matrix_b = matrix_b,
-			.result = result,
-			.start = start,
-			.end = end,
-		};
-	}
-	
-	// launch threads
-	for (int i = 0; i < g_nthreads; i++) {
-		pthread_create(thread_ids + i, NULL, funcptr, args + i);
-	}
-	
-	// wait for threads to finish
-	for (size_t i = 0; i < g_nthreads; i++) {
-		pthread_join(thread_ids[i], NULL);
-	}
-}
-
 
 
 ////////////////////////////////
@@ -129,9 +151,12 @@ void spawn_threads_mul(void*(*funcptr)(void*), const float* matrix_a, const floa
 ////////////////////////////////
 
 void* identity_thread(void* argv){
-	thdata* data = (thdata*) argv;
+	d_imthread* data = (d_imthread*) argv;
 	
-	for(int i = data->start; i < data->end; i++){
+	int start = data->start;
+	int end = data->end;
+	
+	for(int i = start; i < end; i++){
 		data->result[i * g_width + i] = 1.0;
 	}
 	
@@ -139,11 +164,14 @@ void* identity_thread(void* argv){
 }
 
 void* uniform_thread(void* argv){
-	thdata* data = (thdata*) argv;
+	d_umthread* data = (d_umthread*) argv;
+	
+	int start = data->start;
+	int end = data->end;
 	
 	float value = data->value;
 	
-	for(int i = data->start; i < data->end; i++){
+	for(int i = start; i < end; i++){
 		data->result[i] = value;
 	}
 	
@@ -151,12 +179,17 @@ void* uniform_thread(void* argv){
 }
 
 void* sequence_thread(void* argv){
-	thdata* data = (thdata*) argv;
-	float step = data->step;
-	float start = data->value;
+	d_smthread* data = (d_smthread) argv;
 	
-	for(int i = data->start; i < data->end; i++){
-		data->result[i] = start + (step*i);
+	int start = data->start;
+	int end = data->end;
+	
+	float initial = data->initial;
+	float step = data->step;
+	
+	
+	for(int i = start; i < end; i++){
+		data->result[i] = initial + (step*i);
 	}
 	
 	return NULL;
@@ -164,11 +197,14 @@ void* sequence_thread(void* argv){
 
 
 void* scalar_mul_thread(void* argv){
-	thdata* data = (thdata*) argv;
+	d_sthread* data = (d_sthread*) argv;
+	
+	int start = data->start;
+	int end = data->end;
 	
 	float scalar = data->value;
 		
-	for(int i = data->start; i < data->end; i++){
+	for(int i = start; i < end; i++){
 		data->result[i] = (data->matrix[i])*scalar;
 	}
 	
@@ -176,11 +212,14 @@ void* scalar_mul_thread(void* argv){
 }
 
 void* scalar_add_thread(void* argv){
-	thdata* data = (thdata*) argv;
+	d_sthread* data = (d_sthread*) argv;
+	
+	int start = data->start;
+	int end = data->end;
 	
 	float scalar = data->value;
 		
-	for(int i = data->start; i < data->end; i++){
+	for(int i = start; i < end; i++){
 		data->result[i] = (data->matrix[i])+scalar;
 	}
 	
@@ -190,17 +229,24 @@ void* scalar_add_thread(void* argv){
 
 
 void* matrix_mul_thread(void* argv){
-	thmuldata* data = (thmuldata*) argv;
+	d_mthread* data = (d_mthread*) argv;
+	
+	int start = data->start;
+	int end = data->end;
+	
+	float* matrix_a = data->matrix_a;
+	float* matrix_a = data->matrix_b;
+	float* result = data->result;
 	
 	float sum = 0;
 	
-	for(int i=data->start; i < data->end; i++){
+	for(int i=start; i < end; i++){
 		for(int k=0; k < g_width; k++){
 			sum = 0;
 			for(int j=0; j < g_width; j++){
-				sum += (data->matrix_a[i * g_width + k]*data->matrix_b[k * g_width + j]);
+				sum += (matrix_a[i * g_width + k]*matrix_b[k * g_width + j]);
 			}
-			data->result[i * g_width + k] = sum;
+			result[i * g_width + k] = sum;
 		}
 	}
 	
@@ -208,10 +254,17 @@ void* matrix_mul_thread(void* argv){
 }
 
 void* matrix_add_thread(void* argv){
-	thmuldata* data = (thmuldata*) argv;
+	d_mthread* data = (d_mthread*) argv;
+	
+	int start = data->start;
+	int end = data->end;
+	
+	float* matrix_a = data->matrix_a;
+	float* matrix_a = data->matrix_b;
+	float* result = data->result;
 	
 	for(int i=data->start; i < data->end; i++){
-		data->result[i] = data->matrix_a[i] + data->matrix_b[i];
+		result[i] = matrix_a[i] + matrix_b[i];
 	}
 	
 	return NULL;
@@ -335,7 +388,7 @@ float* empty_matrix(void) {
 float* identity_matrix(void) {
 
 	float* result = new_matrix();
-
+	
 	/*
 		1 0
 		0 1
@@ -348,7 +401,8 @@ float* identity_matrix(void) {
 		void* (*functionPtr)(void*);
 		functionPtr = &identity_thread;
 		int partition = g_width / g_nthreads;
-		spawn_threads(functionPtr, NULL, result, partition, 0, 0);
+		d_imthread data = {result, 0.0, 0.0};
+		spawn_threads(functionPtr, data, partition);
 		
 	}else{
 		for(int i = 0; i < g_width; i++){
