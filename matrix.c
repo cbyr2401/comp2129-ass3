@@ -177,13 +177,13 @@ void spawn_threads(void*(*funcptr)(void*), thread_args argv){
 	for (int i = 0; i < g_nthreads; i++) {
 		pthread_create(thread_ids + i, NULL, funcptr, args+(incre*i) );
 	}
-	
-	free(args);
-	
+
 	// wait for threads to finish
 	for (size_t i = 0; i < g_nthreads; i++) {
 		pthread_join(thread_ids[i], NULL);
 	}
+	
+	free(args);
 	
 	return;
 }
