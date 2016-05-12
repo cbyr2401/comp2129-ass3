@@ -99,6 +99,13 @@ typedef struct {
 	int end;
 } d_sthread;
 
+typedef struct {
+	const float* matrix;
+	float* retm;
+	int start;
+	int end;
+} sort_type;
+
 typedef enum {
 	MMULTHREAD, MADDTHREAD, STHREAD, OTHREAD, IMTHREAD, UMTHREAD, SMTHREAD, RMTHREAD
 } thread_type;

@@ -8,7 +8,7 @@
 
 #include "matrix.h"
 
-#define OPTIMIAL_THREAD 1
+#define OPTIMIAL_THREAD 2
 
 #define M_IDENTITY 1.0
 #define M_SEQUENCE 2.0
@@ -139,21 +139,21 @@ void spawn_threads(void*(*funcptr)(void*), thread_args argv){
 			start = end;
 		}
 	}
-	else if(method == RMTHREAD){
-		args = (d_imthread*)malloc(sizeof(d_imthread)*g_nthreads);
-		incre = sizeof(d_imthread);		
+	// else if(method == RMTHREAD){
+		// args = (d_imthread*)malloc(sizeof(d_imthread)*g_nthreads);
+		// incre = sizeof(d_imthread);		
 		
-		for(int id=0; id < g_nthreads; id++){
-			end = id == g_nthreads - 1 ? g_elements : (id + 1) * (g_elements / g_nthreads);
+		// for(int id=0; id < g_nthreads; id++){
+			// end = id == g_nthreads - 1 ? g_elements : (id + 1) * (g_elements / g_nthreads);
 							
-			((d_imthread*)args)[id] = (d_imthread) {
-				.result = result,
-				.start = start,
-				.end = end,
-			};
-			start = end;
-		}
-	}
+			// ((d_imthread*)args)[id] = (d_imthread) {
+				// .result = result,
+				// .start = start,
+				// .end = end,
+			// };
+			// start = end;
+		// }
+	// }
 	else if(method == UMTHREAD){
 		args = (d_umthread*)malloc(sizeof(d_umthread)*g_nthreads);
 		incre = sizeof(d_umthread);
@@ -241,21 +241,21 @@ void* uniform_thread(void* argv){
 	return NULL;
 }
 
-/**
- *	Random Matrix Thread Process
- */
-void* random_thread(void* argv){
-	d_imthread* data = (d_imthread*) argv;
+// /**
+ // *	Random Matrix Thread Process
+ // */
+// void* random_thread(void* argv){
+	// d_imthread* data = (d_imthread*) argv;
 	
-	int start = data->start;
-	int end = data->end;
+	// int start = data->start;
+	// int end = data->end;
 	
-	for (ssize_t i = start; i < end; i++) {
-		data->result[i] = fast_rand();
-	}
+	// for (int i = start; i < end; i++) {
+		// data->result[i] = fast_rand();
+	// }
 	
-	return NULL;
-}
+	// return NULL;
+// }
 
 /**
  *	Sequence Matrix Thread Process
@@ -517,20 +517,20 @@ float* random_matrix(int seed) {
 	
 	matrix[CACHE_TYPE] = M_RANDOM;
 	
-	if(g_width > OPTIMIAL_THREAD && g_nthreads > 1){
-		void* (*functionPtr)(void*);
-		functionPtr = &random_thread;
-		thread_args data = (thread_args){
-				.result = matrix,
-				.type = RMTHREAD,
-				};
+	// if(g_width > OPTIMIAL_THREAD && g_nthreads > 1){
+		// void* (*functionPtr)(void*);
+		// functionPtr = &random_thread;
+		// thread_args data = (thread_args){
+				// .result = matrix,
+				// .type = RMTHREAD,
+				// };
 		
-		spawn_threads(functionPtr, data);
-	}else{
+		// spawn_threads(functionPtr, data);
+	// }else{
 		for (ssize_t i = 0; i < g_elements; i++) {
 			matrix[i] = fast_rand();
 		}
-	}
+	// }
 	
 	return matrix;
 }
@@ -634,6 +634,57 @@ float* sorted(const float* matrix) {
 		return result;
 	}
 	
+	pthread_t thread_ids[g_nthreads];
+	sort_type argv[g_nthreads];
+	
+	int start = 0;
+	int end = 0;
+	
+	for(id = 0; id < g_nthreads; id++){
+		end = id == g_nthreads - 1 ? g_elements : (id + 1) * (g_elements / g_nthreads);
+		
+		args[id] = (sort_type) {
+			.matrix = matrix,
+			.start = start,
+			.end = end,
+			.retm = NULL,
+		};
+		start = end;
+	}
+	
+	// launch threads
+	for (int i = 0; i < g_nthreads; i++) {
+		pthread_create(thread_ids + i, NULL, funcptr, args+(incre*i) );
+	}
+
+	// wait for threads to finish
+	for (size_t i = 0; i < g_nthreads; i++) {
+		pthread_join(thread_ids[i], NULL);
+	}
+	
+	
+	
+}
+
+void* sortparallel(void* argv){
+	(sort_type*) data = argv;
+	
+	int start = data->start;
+	int end = data->end;
+	int size = end-start;
+	
+	float* rtnmatrix = (float*)malloc(sizeof(float)*size);
+	
+	// put values into a temp array for sorting...
+	for(int i=start; i < size; i++){
+		rtnmatrix[i-start] = matrix[i];
+	}
+	
+	qsort(rtnmatrix, size, sizeof(float), sortcmp);
+	
+	data->retm = rtnmatrix;
+	
+	return;
 }
 
 
