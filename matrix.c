@@ -182,7 +182,7 @@ void spawn_threads(void*(*funcptr)(void*), thread_args argv){
 	for (size_t i = 0; i < g_nthreads; i++) {
 		pthread_join(thread_ids[i], NULL);
 	}
-	
+	if(method == MMULTHREAD) free(argv.args.matrix.matrix_b);
 	free(args);
 	
 	return;
@@ -198,9 +198,7 @@ void* identity_thread(void* argv){
 	
 	int start = data->start;
 	int end = data->end;
-	
-	printf("**line 240: start: %d  || finish: %d  || pointer: %p**\n", start, end, data->result);
-	
+		
 	for(int i = start; i < end; i++){
 		data->result[i * g_width + i] = 1.0;
 	}
@@ -282,17 +280,15 @@ void* matrix_mul_thread(void* argv){
 	
 	float sum = 0;
 	
-	float* transpose = transposed(matrix_b);
 	for(int i=start; i < end; i++){
 		for(int k=0; k < g_width; k++){
 			sum = 0;
 			for(int j=0; j < g_width; j++){
-				sum += matrix_a[i * g_width + j]*transpose[k * g_width + j];
+				sum += matrix_a[i * g_width + j]*matrix_b[k * g_width + j];
 			}
 			result[i * g_width + k] = sum;
 		}
 	}
-	free(transpose);
 	
 	return NULL;
 }
@@ -798,13 +794,13 @@ float* matrix_mul(const float* matrix_a, const float* matrix_b) {
 	if(g_width > OPTIMIAL_THREAD-10 && g_nthreads > 1){
 		void* (*functionPtr)(void*);
 		functionPtr = &matrix_mul_thread;
+		float* transpose = transposed(matrix_b);
 		thread_args data = (thread_args){
 				.result = result,
 				.type = MMULTHREAD,
 				.args.matrix.matrix_a = matrix_a,
-				.args.matrix.matrix_b = matrix_b,
+				.args.matrix.matrix_b = transpose,
 				};
-		
 		spawn_threads(functionPtr, data);
 	}else{
 		// very slow method
