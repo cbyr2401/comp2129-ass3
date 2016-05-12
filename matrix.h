@@ -104,7 +104,7 @@ typedef enum {
 } thread_type;
 
 typedef struct {
-	int partition;
+	float partition;
 	thread_type type;
 	float* result;
 	
