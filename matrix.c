@@ -633,58 +633,6 @@ float* sorted(const float* matrix) {
 		qsort(result, g_elements, sizeof(float), sortcmp);
 		return result;
 	}
-	
-	pthread_t thread_ids[g_nthreads];
-	sort_type argv[g_nthreads];
-	
-	int start = 0;
-	int end = 0;
-	
-	for(id = 0; id < g_nthreads; id++){
-		end = id == g_nthreads - 1 ? g_elements : (id + 1) * (g_elements / g_nthreads);
-		
-		args[id] = (sort_type) {
-			.matrix = matrix,
-			.start = start,
-			.end = end,
-			.retm = NULL,
-		};
-		start = end;
-	}
-	
-	// launch threads
-	for (int i = 0; i < g_nthreads; i++) {
-		pthread_create(thread_ids + i, NULL, funcptr, args+(incre*i) );
-	}
-
-	// wait for threads to finish
-	for (size_t i = 0; i < g_nthreads; i++) {
-		pthread_join(thread_ids[i], NULL);
-	}
-	
-	
-	
-}
-
-void* sortparallel(void* argv){
-	(sort_type*) data = argv;
-	
-	int start = data->start;
-	int end = data->end;
-	int size = end-start;
-	
-	float* rtnmatrix = (float*)malloc(sizeof(float)*size);
-	
-	// put values into a temp array for sorting...
-	for(int i=start; i < size; i++){
-		rtnmatrix[i-start] = matrix[i];
-	}
-	
-	qsort(rtnmatrix, size, sizeof(float), sortcmp);
-	
-	data->retm = rtnmatrix;
-	
-	return;
 }
 
 
@@ -764,9 +712,6 @@ float* transposed(const float* matrix) {
  * Returns new matrix with scalar added to each element.
  */
 float* scalar_add(const float* matrix, float scalar) {
-
-	float* result = empty_matrix();
-	result[CACHE_TYPE] = matrix[CACHE_TYPE];
 	/*
 		1 0        2 1
 		0 1 + 1 => 1 2
@@ -774,26 +719,30 @@ float* scalar_add(const float* matrix, float scalar) {
 		1 2        5 6
 		3 4 + 4 => 7 8
 	*/
-	
-	if(g_width > OPTIMIAL_THREAD && g_nthreads > 1){
-		void* (*functionPtr)(void*);
-		functionPtr = &scalar_add_thread;
-		thread_args data = (thread_args){
-				.result = result,
-				.type = STHREAD,
-				.args.scalar.scalar = scalar,
-				.args.scalar.matrix = matrix,
-				};
+	if(scalar == 0) return cloned(matrix);
+	else{
+		float* result = empty_matrix();
+		result[CACHE_TYPE] = matrix[CACHE_TYPE];
 		
-		spawn_threads(functionPtr, data);
-	}else{
-		
-		for(int i = 0; i < g_elements; i++){
-			result[i] = matrix[i] + scalar;
+		if(g_width > OPTIMIAL_THREAD && g_nthreads > 1){
+			void* (*functionPtr)(void*);
+			functionPtr = &scalar_add_thread;
+			thread_args data = (thread_args){
+					.result = result,
+					.type = STHREAD,
+					.args.scalar.scalar = scalar,
+					.args.scalar.matrix = matrix,
+					};
+			
+			spawn_threads(functionPtr, data);
+		}else{
+			for(int i = 0; i < g_elements; i++){
+				result[i] = matrix[i] + scalar;
+			}
 		}
-	}
 
-	return result;
+		return result;
+	}
 }
 
 /**
@@ -801,8 +750,8 @@ float* scalar_add(const float* matrix, float scalar) {
  */
 float* scalar_mul(const float* matrix, float scalar) {
 
-	float* result = empty_matrix();
-	result[CACHE_TYPE] = matrix[CACHE_TYPE];
+	
+	
 	/*
 		1 0        2 0
 		0 1 x 2 => 0 2
@@ -810,25 +759,30 @@ float* scalar_mul(const float* matrix, float scalar) {
 		1 2        2 4
 		3 4 x 2 => 6 8
 	*/
-	if(g_width > OPTIMIAL_THREAD && g_nthreads > 1){
-		void* (*functionPtr)(void*);
-		functionPtr = &scalar_mul_thread;
-		thread_args data = (thread_args){
-				.result = result,
-				.type = STHREAD,
-				.args.scalar.scalar = scalar,
-				.args.scalar.matrix = matrix,
-				};
-		
-		spawn_threads(functionPtr, data);
-	}else{
-		
-		for(int i = 0; i < g_elements; i++){
-			result[i] = matrix[i] * scalar;
+	if(scalar == 0) return cloned(matrix);
+	else{
+		float* result = empty_matrix();
+		result[CACHE_TYPE] = matrix[CACHE_TYPE];
+		if(g_width > OPTIMIAL_THREAD && g_nthreads > 1){
+			void* (*functionPtr)(void*);
+			functionPtr = &scalar_mul_thread;
+			thread_args data = (thread_args){
+					.result = result,
+					.type = STHREAD,
+					.args.scalar.scalar = scalar,
+					.args.scalar.matrix = matrix,
+					};
+			
+			spawn_threads(functionPtr, data);
+		}else{
+			
+			for(int i = 0; i < g_elements; i++){
+				result[i] = matrix[i] * scalar;
+			}
 		}
+		
+		return result;
 	}
-	
-	return result;
 }
 
 
@@ -871,22 +825,10 @@ float* matrix_add(const float* matrix_a, const float* matrix_b) {
 
 
 /**
- * Returns the smaller of two given floats.
- *  Used for matrix.mul with cache miss improvement.
- */
-int min(const int a, const int b){
-	if(a<b) return b;
-	return a;
-}
-
-/**
  * Returns new matrix that is the result of
  * multiplying the two matrices together.
  */
 float* matrix_mul(const float* matrix_a, const float* matrix_b) {
-
-	float* result = empty_matrix();
-	result[CACHE_TYPE] = M_RANDOM;
 	/*
 		1 2   1 0    1 2
 		3 4 x 0 1 => 3 4
@@ -894,7 +836,10 @@ float* matrix_mul(const float* matrix_a, const float* matrix_b) {
 		1 2   5 6    19 22
 		3 4 x 7 8 => 43 50
 	*/
+	if(matrix_b[CACHE_TYPE] == M_IDENTITY) return cloned(matrix_a);
 	
+	float* result = empty_matrix();
+	result[CACHE_TYPE] = M_RANDOM;
 	if(g_width > OPTIMIAL_THREAD-10 && g_nthreads > 1){
 		void* (*functionPtr)(void*);
 		functionPtr = &matrix_mul_thread;
@@ -910,7 +855,6 @@ float* matrix_mul(const float* matrix_a, const float* matrix_b) {
 	}else{
 		// very slow method
 		float sum;
-		//float t;
 		float* transpose = transposed(matrix_b);
 		for(int i=0; i < g_width; i++){
 			for(int k=0; k < g_width; k++){

@@ -106,6 +106,11 @@ typedef struct {
 	int end;
 } sort_type;
 
+typedef struct {
+	float* matrix;
+	int n;
+} quicksort_type;
+
 typedef enum {
 	MMULTHREAD, MADDTHREAD, STHREAD, OTHREAD, IMTHREAD, UMTHREAD, SMTHREAD, RMTHREAD
 } thread_type;
