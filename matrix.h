@@ -145,22 +145,13 @@ typedef struct {
 } thread_args;
 
 
-// thread structs (defined in typedef below)
-// typedef struct d_mthread d_mthread; // matrix mul
-// typedef struct d_sthread d_sthread; // scalar mul + add
-// typedef struct d_othread d_othread; // operations
-// typedef struct d_imthread d_imthread; // identity matrix
-// typedef struct d_umthread d_umthread; // uniform matrix
-// typedef struct d_smthread d_smthread; // sequence matrix
-//typedef enum thread_data_types thread_type; // type of thread struct to use
-
-//typedef struct thread_args thread_args;
-
 void spawn_threads(void*(*funcptr)(void*), thread_args argv);
 void* identity_thread(void* argv);
 void* uniform_thread(void* argv);
 void* sequence_thread(void* argv);
 void* scalar_mul_thread(void* argv);
+void* matrix_mul_thread(void* argv);
+void* matrix_add_thread(void* argv);
 
 
 #endif

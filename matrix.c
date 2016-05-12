@@ -8,7 +8,7 @@
 
 #include "matrix.h"
 
-#define OPTIMIAL_THREAD 20
+#define OPTIMIAL_THREAD 1
 
 #define M_IDENTITY 1.0
 #define M_SEQUENCE 2.0
@@ -61,7 +61,6 @@ void spawn_threads(void*(*funcptr)(void*), thread_args argv){
 	float* result = argv.result;
 	thread_type method = argv.type;
 	int incre = 0;
-	
 	
 	if(method == MMULTHREAD){
 		args = (d_mthread*)malloc(sizeof(d_mthread)*g_nthreads);
@@ -127,7 +126,8 @@ void spawn_threads(void*(*funcptr)(void*), thread_args argv){
 		}
 	else if(method == IMTHREAD){
 		args = (d_imthread*)malloc(sizeof(d_imthread)*g_nthreads);
-		incre = sizeof(d_imthread);
+		incre = sizeof(d_imthread);		
+		
 		for(int id=0; id < g_nthreads; id++){
 			end = id == g_nthreads - 1 ? g_width : (id + 1) * (g_width / g_nthreads);
 							
@@ -198,6 +198,8 @@ void* identity_thread(void* argv){
 	
 	int start = data->start;
 	int end = data->end;
+	
+	printf("**line 240: start: %d  || finish: %d  || pointer: %p**\n", start, end, data->result);
 	
 	for(int i = start; i < end; i++){
 		data->result[i * g_width + i] = 1.0;
@@ -792,27 +794,6 @@ float* matrix_mul(const float* matrix_a, const float* matrix_b) {
 		1 2   5 6    19 22
 		3 4 x 7 8 => 43 50
 	*/
-	
-	//int tile_size = (int)sqrt(g_width);
-
-	//second method - still very slow... fixes cache misses for row-major
-	// for(int I=0; I < g_width; I+=tile_size){
-		// for(int J=0; J < g_width; J+=tile_size){
-			// for(int K=0; K < g_width; K+=tile_size){
-				// for(int i=0; i < min(I+tile_size, g_width); i++){
-					// for(int j=0; j < min(J+tile_size, g_width); j++){
-						// sum = 0;
-						// for(int k = 0; k < min(K+tile_size, g_width); k++){
-							// if(matrix_a[i * g_width + k] != 0 || matrix_b[k * g_width + j] != 0){
-								// sum = sum+(matrix_a[i * g_width + k]*matrix_b[k * g_width + j]);
-							// }
-						// }
-						// result[i * g_width + j] = sum;
-					// }
-				// }
-			// }
-		// }
-	// }
 	
 	if(g_width > OPTIMIAL_THREAD-10 && g_nthreads > 1){
 		void* (*functionPtr)(void*);
