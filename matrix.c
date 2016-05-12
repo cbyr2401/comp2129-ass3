@@ -139,6 +139,21 @@ void spawn_threads(void*(*funcptr)(void*), thread_args argv){
 			start = end;
 		}
 	}
+	else if(method == RMTHREAD){
+		args = (d_imthread*)malloc(sizeof(d_imthread)*g_nthreads);
+		incre = sizeof(d_imthread);		
+		
+		for(int id=0; id < g_nthreads; id++){
+			end = id == g_nthreads - 1 ? g_elements : (id + 1) * (g_elements / g_nthreads);
+							
+			((d_imthread*)args)[id] = (d_imthread) {
+				.result = result,
+				.start = start,
+				.end = end,
+			};
+			start = end;
+		}
+	}
 	else if(method == UMTHREAD){
 		args = (d_umthread*)malloc(sizeof(d_umthread)*g_nthreads);
 		incre = sizeof(d_umthread);
@@ -192,7 +207,9 @@ void spawn_threads(void*(*funcptr)(void*), thread_args argv){
 ////////////////////////////////
 ///    THREADING WORKERS     ///
 ////////////////////////////////
-
+/**
+ *	Identity Matrix Thread Process
+ */
 void* identity_thread(void* argv){
 	d_imthread* data = (d_imthread*) argv;
 	
@@ -206,6 +223,9 @@ void* identity_thread(void* argv){
 	return NULL;
 }
 
+/**
+ *	Uniform Matrix Thread Process
+ */
 void* uniform_thread(void* argv){
 	d_umthread* data = (d_umthread*) argv;
 	
@@ -221,6 +241,25 @@ void* uniform_thread(void* argv){
 	return NULL;
 }
 
+/**
+ *	Random Matrix Thread Process
+ */
+void* random_thread(void* argv){
+	d_imthread* data = (d_imthread*) argv;
+	
+	int start = data->start;
+	int end = data->end;
+	
+	for (ssize_t i = start; i < end; i++) {
+		data->result[i] = fast_rand();
+	}
+	
+	return NULL;
+}
+
+/**
+ *	Sequence Matrix Thread Process
+ */
 void* sequence_thread(void* argv){
 	d_smthread* data = (d_smthread*) argv;
 	
@@ -237,7 +276,9 @@ void* sequence_thread(void* argv){
 	return NULL;
 }
 
-
+/**
+ *	Scalar Multiply Thread Process
+ */
 void* scalar_mul_thread(void* argv){
 	d_sthread* data = (d_sthread*) argv;
 	
@@ -253,6 +294,9 @@ void* scalar_mul_thread(void* argv){
 	return NULL;
 }
 
+/**
+ *	Scalar Add Thread Process
+ */
 void* scalar_add_thread(void* argv){
 	d_sthread* data = (d_sthread*) argv;
 	
@@ -268,6 +312,9 @@ void* scalar_add_thread(void* argv){
 	return NULL;
 }
 
+/**
+ *	Matrix Multiply Thread Process
+ */
 void* matrix_mul_thread(void* argv){
 	d_mthread* data = (d_mthread*) argv;
 	
@@ -293,6 +340,9 @@ void* matrix_mul_thread(void* argv){
 	return NULL;
 }
 
+/**
+ *	Matrix Add Thread Process
+ */
 void* matrix_add_thread(void* argv){
 	d_mthread* data = (d_mthread*) argv;
 	
@@ -302,15 +352,14 @@ void* matrix_add_thread(void* argv){
 	const float* matrix_a = data->matrix_a;
 	const float* matrix_b = (const float*)data->matrix_b;
 	float* result = data->result;
-	
-	printf("matrix_a %p | matrix_b %p | result %p | start %d | end %d\n", matrix_a, matrix_b, result, start, end);
-	
+		
 	for(int i=start; i < end; i++){
 		result[i] = matrix_a[i] + matrix_b[i];
 	}
 	
 	return NULL;
 }
+
 
 ////////////////////////////////
 ///     UTILITY FUNCTIONS    ///
@@ -406,6 +455,7 @@ void display_element(const float* matrix, ssize_t row, ssize_t column) {
 	printf("%.2f\n", matrix[row * g_width + column]);
 }
 
+
 ////////////////////////////////
 ///   MATRIX INITALISATIONS  ///
 ////////////////////////////////
@@ -428,15 +478,12 @@ float* empty_matrix(void) {
  * Returns new identity matrix.
  */
 float* identity_matrix(void) {
-
-	float* result = new_matrix();
-	
 	/*
 		1 0
 		0 1
 	*/
-	//set_cache(result,M_IDENTITY,0.0,0.0,1.0,g_width,1.0,g_width);
-	
+	float* result = new_matrix();
+		
 	result[CACHE_TYPE] = M_IDENTITY;
 	
 	if(g_width > OPTIMIAL_THREAD && g_nthreads > 1){
@@ -464,17 +511,27 @@ float* identity_matrix(void) {
  */
 float* random_matrix(int seed) {
 
-	float* matrix = new_matrix();
+	float* matrix = empty_matrix();
 
 	set_seed(seed);
 	
-	//set_cache(result,M_RANDOM,0.0,FLT_MAX,FLT_MIN,FLT_MIN,FLT_MIN,FLT_MIN);
 	matrix[CACHE_TYPE] = M_RANDOM;
 	
-	for (ssize_t i = 0; i < g_elements; i++) {
-		matrix[i] = fast_rand();
+	if(g_width > OPTIMIAL_THREAD && g_nthreads > 1){
+		void* (*functionPtr)(void*);
+		functionPtr = &random_thread;
+		thread_args data = (thread_args){
+				.result = matrix,
+				.type = RMTHREAD,
+				};
+		
+		spawn_threads(functionPtr, data);
+	}else{
+		for (ssize_t i = 0; i < g_elements; i++) {
+			matrix[i] = fast_rand();
+		}
 	}
-
+	
 	return matrix;
 }
 
@@ -482,15 +539,12 @@ float* random_matrix(int seed) {
  * Returns new matrix with all elements set to given value. DONE!!
  */
 float* uniform_matrix(float value) {
-
-	float* result = empty_matrix();
-
 	/*
 		     1 1
 		1 => 1 1
 	*/
-
-	//set_cache(result,M_UNIFORM,1.0,value,value,value*g_elements,FLT_MIN,4*g_width);
+	float* result = empty_matrix();
+	
 	result[CACHE_TYPE] = M_UNIFORM;
 	
 	if(g_width > OPTIMIAL_THREAD && g_nthreads > 1){
@@ -512,20 +566,16 @@ float* uniform_matrix(float value) {
 	return result;
 }
 
-
-
 /**
  * Returns new matrix with elements in sequence from given start and step DONE!!
  */
 float* sequence_matrix(float start, float step) {
-
-	float* result = empty_matrix();
-
 	/*
 		       1 2
 		1 1 => 3 4
 	*/
-	//set_cache(result,M_SEQUENCE,1.0,value,value,value*g_elements,FLT_MIN,4*g_width);
+	float* result = empty_matrix();
+	
 	result[CACHE_TYPE] = M_SEQUENCE;
 	
 	if(g_width > OPTIMIAL_THREAD && g_nthreads > 1){
@@ -546,6 +596,7 @@ float* sequence_matrix(float start, float step) {
 	
 	return result;
 }
+
 
 ////////////////////////////////
 ///     MATRIX OPERATIONS    ///
