@@ -66,7 +66,7 @@ void spawn_threads(void*(*funcptr)(void*), thread_args argv){
 		args = (d_mthread*)malloc(sizeof(d_mthread)*g_nthreads);
 		incre = sizeof(d_mthread);
 		for(int id=0; id < g_nthreads; id++){
-			end = id == g_nthreads - 1 ? g_elements : (id + 1) * (g_elements / g_nthreads);
+			end = id == g_nthreads - 1 ? g_width : (id + 1) * (g_width / g_nthreads);
 			((d_mthread*)args)[id] = (d_mthread) {
 				.result = result,
 				.start = start,
@@ -81,7 +81,7 @@ void spawn_threads(void*(*funcptr)(void*), thread_args argv){
 		args = (d_sthread*)malloc(sizeof(d_sthread)*g_nthreads);
 		incre = sizeof(d_sthread);
 		for(int id=0; id < g_nthreads; id++){
-			end = id == g_nthreads - 1 ? g_width : (id + 1) * (g_width / g_nthreads);
+			end = id == g_nthreads - 1 ? g_elements : (id + 1) * (g_elements / g_nthreads);
 							
 			((d_sthread*)args)[id] = (d_sthread) {
 				.result = result,
@@ -182,7 +182,7 @@ void spawn_threads(void*(*funcptr)(void*), thread_args argv){
 	for (size_t i = 0; i < g_nthreads; i++) {
 		pthread_join(thread_ids[i], NULL);
 	}
-	if(method == MMULTHREAD) free(argv.args.matrix.matrix_b);
+	//if(method == MMULTHREAD) free(argv.args.matrix.matrix_b);
 	free(args);
 	
 	return;
@@ -802,6 +802,7 @@ float* matrix_mul(const float* matrix_a, const float* matrix_b) {
 				.args.matrix.matrix_b = transpose,
 				};
 		spawn_threads(functionPtr, data);
+		free(transpose);
 	}else{
 		// very slow method
 		float sum;
