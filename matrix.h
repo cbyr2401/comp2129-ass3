@@ -111,7 +111,7 @@ typedef struct {
 		struct
 		{
 			const float* matrix_a;
-			const float* matrix_b;
+			float* matrix_b;
 		} matrix;
 		
 		struct

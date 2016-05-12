@@ -750,7 +750,7 @@ float* matrix_add(const float* matrix_a, const float* matrix_b) {
 				.result = result,
 				.type = MADDTHREAD,
 				.args.matrix.matrix_a = matrix_a,
-				.args.matrix.matrix_b = matrix_b,
+				.args.matrix.matrix_b = (float *)matrix_b,
 				};
 		
 		spawn_threads(functionPtr, data);
