@@ -100,11 +100,10 @@ typedef struct {
 } d_sthread;
 
 typedef enum {
-	MTHREAD, STHREAD, OTHREAD, IMTHREAD, UMTHREAD, SMTHREAD
+	MMULTHREAD, MADDTHREAD, STHREAD, OTHREAD, IMTHREAD, UMTHREAD, SMTHREAD
 } thread_type;
 
 typedef struct {
-	float partition;
 	thread_type type;
 	float* result;
 	

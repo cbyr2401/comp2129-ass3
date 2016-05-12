@@ -8,7 +8,7 @@
 
 #include "matrix.h"
 
-#define OPTIMIAL_THREAD 1
+#define OPTIMIAL_THREAD 20
 
 #define M_IDENTITY 1.0
 #define M_SEQUENCE 2.0
@@ -59,16 +59,15 @@ void spawn_threads(void*(*funcptr)(void*), thread_args argv){
 	int end = 0;
 	
 	float* result = argv.result;
-	float partition = argv.partition;
 	thread_type method = argv.type;
 	int incre = 0;
 	
 	
-	if(method == MTHREAD){
+	if(method == MMULTHREAD){
 		args = (d_mthread*)malloc(sizeof(d_mthread)*g_nthreads);
 		incre = sizeof(d_mthread);
 		for(int id=0; id < g_nthreads; id++){
-			end += partition;
+			end = id == g_nthreads - 1 ? g_elements : (id + 1) * (g_elements / g_nthreads);
 			((d_mthread*)args)[id] = (d_mthread) {
 				.result = result,
 				.start = start,
@@ -79,11 +78,27 @@ void spawn_threads(void*(*funcptr)(void*), thread_args argv){
 			start = end;
 		}
 	}
+	else if(method == MADDTHREAD){
+		args = (d_sthread*)malloc(sizeof(d_sthread)*g_nthreads);
+		incre = sizeof(d_sthread);
+		for(int id=0; id < g_nthreads; id++){
+			end = id == g_nthreads - 1 ? g_width : (id + 1) * (g_width / g_nthreads);
+							
+			((d_sthread*)args)[id] = (d_sthread) {
+				.result = result,
+				.start = start,
+				.end = end,
+				.value = argv.args.scalar.scalar,
+				.matrix = argv.args.scalar.matrix,
+			};
+			start = end;
+		}
+	}
 	else if(method == STHREAD){
 		args = (d_sthread*)malloc(sizeof(d_sthread)*g_nthreads);
 		incre = sizeof(d_sthread);
 		for(int id=0; id < g_nthreads; id++){
-			end += partition;
+			end = id == g_nthreads - 1 ? g_elements : (id + 1) * (g_elements / g_nthreads);
 							
 			((d_sthread*)args)[id] = (d_sthread) {
 				.result = result,
@@ -99,7 +114,7 @@ void spawn_threads(void*(*funcptr)(void*), thread_args argv){
 		args = (d_othread*)malloc(sizeof(d_othread)*g_nthreads);
 		incre = sizeof(d_othread);
 		for(int id=0; id < g_nthreads; id++){
-			end += partition;
+			end = id == g_nthreads - 1 ? g_elements : (id + 1) * (g_elements / g_nthreads);
 							
 			((d_othread*)args)[id] = (d_othread) {
 				.result = result,
@@ -114,7 +129,7 @@ void spawn_threads(void*(*funcptr)(void*), thread_args argv){
 		args = (d_imthread*)malloc(sizeof(d_imthread)*g_nthreads);
 		incre = sizeof(d_imthread);
 		for(int id=0; id < g_nthreads; id++){
-			end += partition;
+			end = id == g_nthreads - 1 ? g_width : (id + 1) * (g_width / g_nthreads);
 							
 			((d_imthread*)args)[id] = (d_imthread) {
 				.result = result,
@@ -122,14 +137,13 @@ void spawn_threads(void*(*funcptr)(void*), thread_args argv){
 				.end = end,
 			};
 			start = end;
-			printf("end of for loop %d\n", start);
 		}
 	}
 	else if(method == UMTHREAD){
 		args = (d_umthread*)malloc(sizeof(d_umthread)*g_nthreads);
 		incre = sizeof(d_umthread);
 		for(int id=0; id < g_nthreads; id++){
-			end += partition;
+			end = id == g_nthreads - 1 ? g_elements : (id + 1) * (g_elements / g_nthreads);
 							
 			((d_umthread*)args)[id] = (d_umthread) {
 				.result = result,
@@ -144,7 +158,7 @@ void spawn_threads(void*(*funcptr)(void*), thread_args argv){
 		args = (void*)malloc(sizeof(d_smthread)*g_nthreads);
 		incre = sizeof(d_smthread);
 		for(int id=0; id < g_nthreads; id++){
-			end += partition;
+			end = id == g_nthreads - 1 ? g_elements : (id + 1) * (g_elements / g_nthreads);
 							
 			((d_smthread*)args)[id] = (d_smthread) {
 				.result = result,
@@ -154,7 +168,6 @@ void spawn_threads(void*(*funcptr)(void*), thread_args argv){
 				.step = argv.args.sequence.step,
 			};
 			start = end;
-			printf("end of for loop %d\n", start);
 		}
 	}else{
 		return;
@@ -217,8 +230,6 @@ void* sequence_thread(void* argv){
 	float initial = data->initial;
 	float step = data->step;
 	
-	//printf("check: a%d b%d c%f d%f\n", start, end, initial, step);
-	
 	for(int i = start; i < end; i++){
 		data->result[i] = initial + (step*i);
 	}
@@ -269,15 +280,17 @@ void* matrix_mul_thread(void* argv){
 	
 	float sum = 0;
 	
+	float* transpose = transposed(matrix_b);
 	for(int i=start; i < end; i++){
 		for(int k=0; k < g_width; k++){
 			sum = 0;
 			for(int j=0; j < g_width; j++){
-				sum += (matrix_a[i * g_width + k]*matrix_b[k * g_width + j]);
+				sum += matrix_a[i * g_width + j]*transpose[k * g_width + j];
 			}
 			result[i * g_width + k] = sum;
 		}
 	}
+	free(transpose);
 	
 	return NULL;
 }
@@ -429,10 +442,8 @@ float* identity_matrix(void) {
 	if(g_width > OPTIMIAL_THREAD && g_nthreads > 1){
 		void* (*functionPtr)(void*);
 		functionPtr = &identity_thread;
-		float partition = (float)g_width / (float)g_nthreads;
 		thread_args data = (thread_args){
 				.result = result,
-				.partition = partition,
 				.type = IMTHREAD,
 				};
 		
@@ -485,10 +496,8 @@ float* uniform_matrix(float value) {
 	if(g_width > OPTIMIAL_THREAD && g_nthreads > 1){
 		void* (*functionPtr)(void*);
 		functionPtr = &uniform_thread;
-		float partition = (float)g_elements / (float)g_nthreads;
 		thread_args data = (thread_args){
 				.result = result,
-				.partition = partition,
 				.type = UMTHREAD,
 				.args.uniform.value = value,
 				};
@@ -522,10 +531,8 @@ float* sequence_matrix(float start, float step) {
 	if(g_width > OPTIMIAL_THREAD && g_nthreads > 1){
 		void* (*functionPtr)(void*);
 		functionPtr = &sequence_thread;
-		float partition = (float)g_elements / (float)g_nthreads;
 		thread_args data = (thread_args) {
 				.result = result,
-				.partition = partition,
 				.type = SMTHREAD,
 				.args.sequence.initial = start,
 				.args.sequence.step = step,
@@ -669,10 +676,8 @@ float* scalar_add(const float* matrix, float scalar) {
 	if(g_width > OPTIMIAL_THREAD && g_nthreads > 1){
 		void* (*functionPtr)(void*);
 		functionPtr = &scalar_add_thread;
-		float partition = (float)g_elements / (float)g_nthreads;
 		thread_args data = (thread_args){
 				.result = result,
-				.partition = partition,
 				.type = STHREAD,
 				.args.scalar.scalar = scalar,
 				.args.scalar.matrix = matrix,
@@ -706,10 +711,8 @@ float* scalar_mul(const float* matrix, float scalar) {
 	if(g_width > OPTIMIAL_THREAD && g_nthreads > 1){
 		void* (*functionPtr)(void*);
 		functionPtr = &scalar_mul_thread;
-		float partition = (float)g_elements / (float)g_nthreads;
 		thread_args data = (thread_args){
 				.result = result,
-				.partition = partition,
 				.type = STHREAD,
 				.args.scalar.scalar = scalar,
 				.args.scalar.matrix = matrix,
@@ -745,11 +748,9 @@ float* matrix_add(const float* matrix_a, const float* matrix_b) {
 	if(g_width > OPTIMIAL_THREAD-10 && g_nthreads > 1){
 		void* (*functionPtr)(void*);
 		functionPtr = &matrix_add_thread;
-		float partition = (float)g_elements / (float)g_nthreads;
 		thread_args data = (thread_args){
 				.result = result,
-				.partition = partition,
-				.type = MTHREAD,
+				.type = MADDTHREAD,
 				.args.matrix.matrix_a = matrix_a,
 				.args.matrix.matrix_b = matrix_b,
 				};
@@ -816,11 +817,9 @@ float* matrix_mul(const float* matrix_a, const float* matrix_b) {
 	if(g_width > OPTIMIAL_THREAD-10 && g_nthreads > 1){
 		void* (*functionPtr)(void*);
 		functionPtr = &matrix_mul_thread;
-		float partition = (float)g_width / (float)g_nthreads;
 		thread_args data = (thread_args){
 				.result = result,
-				.partition = partition,
-				.type = MTHREAD,
+				.type = MMULTHREAD,
 				.args.matrix.matrix_a = matrix_a,
 				.args.matrix.matrix_b = matrix_b,
 				};
@@ -829,17 +828,18 @@ float* matrix_mul(const float* matrix_a, const float* matrix_b) {
 	}else{
 		// very slow method
 		float sum;
-		float t;
+		//float t;
+		float* transpose = transposed(matrix_b);
 		for(int i=0; i < g_width; i++){
 			for(int k=0; k < g_width; k++){
 				sum = 0;
-				t = matrix_a[i * g_width + k];
 				for(int j=0; j < g_width; j++){
-					sum += t*(matrix_b[k * g_width + j]);
+					sum += matrix_a[i * g_width + j]*transpose[k * g_width + j];
 				}
 				result[i * g_width + k] = sum;
 			}
 		}
+		free(transpose);
 	}
 
 	return result;
