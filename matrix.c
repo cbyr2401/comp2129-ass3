@@ -78,17 +78,17 @@ void spawn_threads(void*(*funcptr)(void*), thread_args argv){
 		}
 	}
 	else if(method == MADDTHREAD){
-		args = (d_sthread*)malloc(sizeof(d_sthread)*g_nthreads);
-		incre = sizeof(d_sthread);
+		args = (d_mthread*)malloc(sizeof(d_mthread)*g_nthreads);
+		incre = sizeof(d_mthread);
 		for(int id=0; id < g_nthreads; id++){
 			end = id == g_nthreads - 1 ? g_elements : (id + 1) * (g_elements / g_nthreads);
 							
-			((d_sthread*)args)[id] = (d_sthread) {
+			((d_mthread*)args)[id] = (d_mthread) {
 				.result = result,
 				.start = start,
 				.end = end,
-				.value = argv.args.scalar.scalar,
-				.matrix = argv.args.scalar.matrix,
+				.matrix_a = argv.args.matrix.matrix_a,
+				.matrix_b = argv.args.matrix.matrix_b,
 			};
 			start = end;
 		}
@@ -300,8 +300,10 @@ void* matrix_add_thread(void* argv){
 	int end = data->end;
 	
 	const float* matrix_a = data->matrix_a;
-	const float* matrix_b = data->matrix_b;
+	const float* matrix_b = (const float*)data->matrix_b;
 	float* result = data->result;
+	
+	printf("matrix_a %p | matrix_b %p | result %p | start %d | end %d\n", matrix_a, matrix_b, result, start, end);
 	
 	for(int i=start; i < end; i++){
 		result[i] = matrix_a[i] + matrix_b[i];
