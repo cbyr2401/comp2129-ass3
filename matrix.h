@@ -107,8 +107,11 @@ typedef struct {
 } sort_type;
 
 typedef struct {
+	const float* cmatrix;
 	float* matrix;
 	int n;
+	int start;
+	int end;
 } quicksort_type;
 
 typedef enum {
@@ -164,6 +167,12 @@ void* sequence_thread(void* argv);
 void* scalar_mul_thread(void* argv);
 void* matrix_mul_thread(void* argv);
 void* matrix_add_thread(void* argv);
+
+//sorting
+void* parallel_qsort(void* args);
+void MergeSort(float* A,int n);
+void Merge(float *A,float *L,int leftCount,float *R,int rightCount);
+
 
 
 #endif

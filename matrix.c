@@ -8,7 +8,7 @@
 
 #include "matrix.h"
 
-#define OPTIMIAL_THREAD 2
+#define OPTIMIAL_THREAD 10
 
 #define M_IDENTITY 1.0
 #define M_SEQUENCE 2.0
@@ -26,12 +26,8 @@
 #define CACHE_DET (g_elements+5)
 #define CACHE_TRACE (g_elements+6)
 
-static int g_seed = 0;
-
 static ssize_t g_width = 0;
-static ssize_t g_height = 0;
 static ssize_t g_elements = 0;
-
 static ssize_t g_nthreads = 1;
 
 
@@ -51,8 +47,11 @@ static ssize_t g_nthreads = 1;
 
 // threads for void* make_matrix(void) operations.
 void spawn_threads(void*(*funcptr)(void*), thread_args argv){
+	const int nwidth = g_width;
+	const int nelements = g_elements;
+	const int nthreads = g_nthreads;
 	
-	pthread_t thread_ids[g_nthreads];
+	pthread_t thread_ids[nthreads];
 	void* args = NULL;
 	
 	int start = 0;
@@ -61,12 +60,12 @@ void spawn_threads(void*(*funcptr)(void*), thread_args argv){
 	float* result = argv.result;
 	thread_type method = argv.type;
 	int incre = 0;
-	
+
 	if(method == MMULTHREAD){
-		args = (d_mthread*)malloc(sizeof(d_mthread)*g_nthreads);
+		args = (d_mthread*)malloc(sizeof(d_mthread)*nthreads);
 		incre = sizeof(d_mthread);
-		for(int id=0; id < g_nthreads; id++){
-			end = id == g_nthreads - 1 ? g_width : (id + 1) * (g_width / g_nthreads);
+		for(int id=0; id < nthreads; id++){
+			end = id == nthreads - 1 ? nwidth : (id + 1) * (nwidth / nthreads);
 			((d_mthread*)args)[id] = (d_mthread) {
 				.result = result,
 				.start = start,
@@ -78,10 +77,10 @@ void spawn_threads(void*(*funcptr)(void*), thread_args argv){
 		}
 	}
 	else if(method == MADDTHREAD){
-		args = (d_mthread*)malloc(sizeof(d_mthread)*g_nthreads);
+		args = (d_mthread*)malloc(sizeof(d_mthread)*nthreads);
 		incre = sizeof(d_mthread);
-		for(int id=0; id < g_nthreads; id++){
-			end = id == g_nthreads - 1 ? g_elements : (id + 1) * (g_elements / g_nthreads);
+		for(int id=0; id < nthreads; id++){
+			end = id == nthreads - 1 ? nelements : (id + 1) * (nelements / nthreads);
 							
 			((d_mthread*)args)[id] = (d_mthread) {
 				.result = result,
@@ -94,10 +93,10 @@ void spawn_threads(void*(*funcptr)(void*), thread_args argv){
 		}
 	}
 	else if(method == STHREAD){
-		args = (d_sthread*)malloc(sizeof(d_sthread)*g_nthreads);
+		args = (d_sthread*)malloc(sizeof(d_sthread)*nthreads);
 		incre = sizeof(d_sthread);
-		for(int id=0; id < g_nthreads; id++){
-			end = id == g_nthreads - 1 ? g_elements : (id + 1) * (g_elements / g_nthreads);
+		for(int id=0; id < nthreads; id++){
+			end = id == nthreads - 1 ? nelements : (id + 1) * (nelements / nthreads);
 							
 			((d_sthread*)args)[id] = (d_sthread) {
 				.result = result,
@@ -110,10 +109,10 @@ void spawn_threads(void*(*funcptr)(void*), thread_args argv){
 		}
 	}
 	else if(method == OTHREAD){
-		args = (d_othread*)malloc(sizeof(d_othread)*g_nthreads);
+		args = (d_othread*)malloc(sizeof(d_othread)*nthreads);
 		incre = sizeof(d_othread);
-		for(int id=0; id < g_nthreads; id++){
-			end = id == g_nthreads - 1 ? g_elements : (id + 1) * (g_elements / g_nthreads);
+		for(int id=0; id < nthreads; id++){
+			end = id == nthreads - 1 ? nelements : (id + 1) * (nelements / nthreads);
 							
 			((d_othread*)args)[id] = (d_othread) {
 				.result = result,
@@ -125,11 +124,11 @@ void spawn_threads(void*(*funcptr)(void*), thread_args argv){
 		}
 		}
 	else if(method == IMTHREAD){
-		args = (d_imthread*)malloc(sizeof(d_imthread)*g_nthreads);
+		args = (d_imthread*)malloc(sizeof(d_imthread)*nthreads);
 		incre = sizeof(d_imthread);		
 		
-		for(int id=0; id < g_nthreads; id++){
-			end = id == g_nthreads - 1 ? g_width : (id + 1) * (g_width / g_nthreads);
+		for(int id=0; id < nthreads; id++){
+			end = id == nthreads - 1 ? nwidth : (id + 1) * (nwidth / nthreads);
 							
 			((d_imthread*)args)[id] = (d_imthread) {
 				.result = result,
@@ -139,26 +138,11 @@ void spawn_threads(void*(*funcptr)(void*), thread_args argv){
 			start = end;
 		}
 	}
-	// else if(method == RMTHREAD){
-		// args = (d_imthread*)malloc(sizeof(d_imthread)*g_nthreads);
-		// incre = sizeof(d_imthread);		
-		
-		// for(int id=0; id < g_nthreads; id++){
-			// end = id == g_nthreads - 1 ? g_elements : (id + 1) * (g_elements / g_nthreads);
-							
-			// ((d_imthread*)args)[id] = (d_imthread) {
-				// .result = result,
-				// .start = start,
-				// .end = end,
-			// };
-			// start = end;
-		// }
-	// }
 	else if(method == UMTHREAD){
-		args = (d_umthread*)malloc(sizeof(d_umthread)*g_nthreads);
+		args = (d_umthread*)malloc(sizeof(d_umthread)*nthreads);
 		incre = sizeof(d_umthread);
-		for(int id=0; id < g_nthreads; id++){
-			end = id == g_nthreads - 1 ? g_elements : (id + 1) * (g_elements / g_nthreads);
+		for(int id=0; id < nthreads; id++){
+			end = id == nthreads - 1 ? nelements : (id + 1) * (nelements / nthreads);
 							
 			((d_umthread*)args)[id] = (d_umthread) {
 				.result = result,
@@ -170,10 +154,10 @@ void spawn_threads(void*(*funcptr)(void*), thread_args argv){
 		}
 	}
 	else if(method == SMTHREAD){
-		args = (void*)malloc(sizeof(d_smthread)*g_nthreads);
+		args = (void*)malloc(sizeof(d_smthread)*nthreads);
 		incre = sizeof(d_smthread);
-		for(int id=0; id < g_nthreads; id++){
-			end = id == g_nthreads - 1 ? g_elements : (id + 1) * (g_elements / g_nthreads);
+		for(int id=0; id < nthreads; id++){
+			end = id == nthreads - 1 ? nelements : (id + 1) * (nelements / nthreads);
 							
 			((d_smthread*)args)[id] = (d_smthread) {
 				.result = result,
@@ -189,12 +173,12 @@ void spawn_threads(void*(*funcptr)(void*), thread_args argv){
 	}
 	
 	// launch threads
-	for (int i = 0; i < g_nthreads; i++) {
+	for (int i = 0; i < nthreads; i++) {
 		pthread_create(thread_ids + i, NULL, funcptr, args+(incre*i) );
 	}
 
 	// wait for threads to finish
-	for (size_t i = 0; i < g_nthreads; i++) {
+	for (size_t i = 0; i < nthreads; i++) {
 		pthread_join(thread_ids[i], NULL);
 	}
 	//if(method == MMULTHREAD) free(argv.args.matrix.matrix_b);
@@ -213,11 +197,13 @@ void spawn_threads(void*(*funcptr)(void*), thread_args argv){
 void* identity_thread(void* argv){
 	d_imthread* data = (d_imthread*) argv;
 	
-	int start = data->start;
-	int end = data->end;
+	const int start = data->start;
+	const int end = data->end;
+	float* result = data->result;
+	const int nwidth = g_width;
 		
 	for(int i = start; i < end; i++){
-		data->result[i * g_width + i] = 1.0;
+		result[i * nwidth + i] = 1.0;
 	}
 	
 	return NULL;
@@ -229,33 +215,18 @@ void* identity_thread(void* argv){
 void* uniform_thread(void* argv){
 	d_umthread* data = (d_umthread*) argv;
 	
-	int start = data->start;
-	int end = data->end;
+	const int start = data->start;
+	const int end = data->end;
+	float* result = data->result;
 	
-	float value = data->value;
+	const float value = data->value;
 	
 	for(int i = start; i < end; i++){
-		data->result[i] = value;
+		result[i] = value;
 	}
 	
 	return NULL;
 }
-
-// /**
- // *	Random Matrix Thread Process
- // */
-// void* random_thread(void* argv){
-	// d_imthread* data = (d_imthread*) argv;
-	
-	// int start = data->start;
-	// int end = data->end;
-	
-	// for (int i = start; i < end; i++) {
-		// data->result[i] = fast_rand();
-	// }
-	
-	// return NULL;
-// }
 
 /**
  *	Sequence Matrix Thread Process
@@ -263,14 +234,15 @@ void* uniform_thread(void* argv){
 void* sequence_thread(void* argv){
 	d_smthread* data = (d_smthread*) argv;
 	
-	int start = data->start;
-	int end = data->end;
+	const int start = data->start;
+	const int end = data->end;
+	float* result = data->result;
 	
-	float initial = data->initial;
-	float step = data->step;
+	const float initial = data->initial;
+	const float step = data->step;
 	
 	for(int i = start; i < end; i++){
-		data->result[i] = initial + (step*i);
+		result[i] = initial + (step*i);
 	}
 	
 	return NULL;
@@ -282,13 +254,15 @@ void* sequence_thread(void* argv){
 void* scalar_mul_thread(void* argv){
 	d_sthread* data = (d_sthread*) argv;
 	
-	int start = data->start;
-	int end = data->end;
+	const int start = data->start;
+	const int end = data->end;
+	float* result = data->result;
+	const float* const matrix = data->matrix;
 	
-	float scalar = data->value;
+	const float scalar = data->value;
 		
 	for(int i = start; i < end; i++){
-		data->result[i] = (data->matrix[i])*scalar;
+		result[i] = matrix[i]*scalar;
 	}
 	
 	return NULL;
@@ -300,13 +274,15 @@ void* scalar_mul_thread(void* argv){
 void* scalar_add_thread(void* argv){
 	d_sthread* data = (d_sthread*) argv;
 	
-	int start = data->start;
-	int end = data->end;
+	const int start = data->start;
+	const int end = data->end;
+	float* result = data->result;
+	const float* const matrix = data->matrix;
 	
-	float scalar = data->value;
+	const float scalar = data->value;
 		
 	for(int i = start; i < end; i++){
-		data->result[i] = (data->matrix[i])+scalar;
+		result[i] = matrix[i]+scalar;
 	}
 	
 	return NULL;
@@ -318,8 +294,9 @@ void* scalar_add_thread(void* argv){
 void* matrix_mul_thread(void* argv){
 	d_mthread* data = (d_mthread*) argv;
 	
-	int start = data->start;
-	int end = data->end;
+	const int start = data->start;
+	const int end = data->end;
+	const int nwidth = g_width;
 	
 	const float* matrix_a = data->matrix_a;
 	const float* matrix_b = data->matrix_b;
@@ -328,12 +305,12 @@ void* matrix_mul_thread(void* argv){
 	float sum = 0;
 	
 	for(int i=start; i < end; i++){
-		for(int k=0; k < g_width; k++){
+		for(int k=0; k < nwidth; k++){
 			sum = 0;
-			for(int j=0; j < g_width; j++){
-				sum += matrix_a[i * g_width + j]*matrix_b[k * g_width + j];
+			for(int j=0; j < nwidth; j++){
+				sum += matrix_a[i * nwidth + j]*matrix_b[k * nwidth + j];
 			}
-			result[i * g_width + k] = sum;
+			result[i * nwidth + k] = sum;
 		}
 	}
 	
@@ -346,11 +323,11 @@ void* matrix_mul_thread(void* argv){
 void* matrix_add_thread(void* argv){
 	d_mthread* data = (d_mthread*) argv;
 	
-	int start = data->start;
-	int end = data->end;
+	const int start = data->start;
+	const int end = data->end;
 	
 	const float* matrix_a = data->matrix_a;
-	const float* matrix_b = (const float*)data->matrix_b;
+	const float* matrix_b = data->matrix_b;
 	float* result = data->result;
 		
 	for(int i=start; i < end; i++){
@@ -359,6 +336,11 @@ void* matrix_add_thread(void* argv){
 	
 	return NULL;
 }
+
+/**
+ *	Get Sum Thread Process  TODO FIX
+ */
+
 
 
 ////////////////////////////////
@@ -373,22 +355,6 @@ int sortcmp(const void * a, const void * b){
 	return ((int)( *(float*)a - *(float*)b ));
 }
 
-/**
- * Returns pseudorandom number determined by the seed.
- */
-int fast_rand(void) {
-
-	g_seed = (214013 * g_seed + 2531011);
-	return (g_seed >> 16) & 0x7FFF;
-}
-
-/**
- * Sets the seed used when generating pseudorandom numbers.
- */
-void set_seed(int seed) {
-
-	g_seed = seed;
-}
 
 /**
  * Sets the number of threads available.
@@ -404,20 +370,19 @@ void set_nthreads(ssize_t count) {
 void set_dimensions(ssize_t order) {
 
 	g_width = order;
-	g_height = order;
-
-	g_elements = g_width * g_height;
+	g_elements = order * order;
 }
 
 /**
  * Displays given matrix.
  */
 void display(const float* matrix) {
-
-	for (ssize_t y = 0; y < g_height; y++) {
-		for (ssize_t x = 0; x < g_width; x++) {
+	const int nwidth = g_width;
+	
+	for (ssize_t y = 0; y < nwidth; y++) {
+		for (ssize_t x = 0; x < nwidth; x++) {
 			if (x > 0) printf(" ");
-			printf("%.2f", matrix[y * g_width + x]);
+			printf("%.2f", matrix[y * nwidth + x]);
 		}
 
 		printf("\n");
@@ -428,10 +393,11 @@ void display(const float* matrix) {
  * Displays given matrix row.
  */
 void display_row(const float* matrix, ssize_t row) {
-
-	for (ssize_t x = 0; x < g_width; x++) {
+	const int nwidth = g_width;
+	
+	for (ssize_t x = 0; x < nwidth; x++) {
 		if (x > 0) printf(" ");
-		printf("%.2f", matrix[row * g_width + x]);
+		printf("%.2f", matrix[row * nwidth + x]);
 	}
 
 	printf("\n");
@@ -441,9 +407,10 @@ void display_row(const float* matrix, ssize_t row) {
  * Displays given matrix column.
  */
 void display_column(const float* matrix, ssize_t column) {
-
-	for (ssize_t i = 0; i < g_height; i++) {
-		printf("%.2f\n", matrix[i * g_width + column]);
+	const int nwidth = g_width;
+	
+	for (ssize_t i = 0; i < nwidth; i++) {
+		printf("%.2f\n", matrix[i * nwidth + column]);
 	}
 }
 
@@ -451,7 +418,7 @@ void display_column(const float* matrix, ssize_t column) {
  * Displays the value stored at the given element index.
  */
 void display_element(const float* matrix, ssize_t row, ssize_t column) {
-
+	
 	printf("%.2f\n", matrix[row * g_width + column]);
 }
 
@@ -513,24 +480,14 @@ float* random_matrix(int seed) {
 
 	float* matrix = empty_matrix();
 
-	set_seed(seed);
+	int rand = seed;
 	
 	matrix[CACHE_TYPE] = M_RANDOM;
 	
-	// if(g_width > OPTIMIAL_THREAD && g_nthreads > 1){
-		// void* (*functionPtr)(void*);
-		// functionPtr = &random_thread;
-		// thread_args data = (thread_args){
-				// .result = matrix,
-				// .type = RMTHREAD,
-				// };
-		
-		// spawn_threads(functionPtr, data);
-	// }else{
-		for (ssize_t i = 0; i < g_elements; i++) {
-			matrix[i] = fast_rand();
-		}
-	// }
+	for (ssize_t i = 0; i < g_elements; i++) {
+		rand = (214013 * rand + 2531011);
+		matrix[i] = (rand >> 16) & 0x7FFF;
+	}
 	
 	return matrix;
 }
@@ -544,6 +501,7 @@ float* uniform_matrix(float value) {
 		1 => 1 1
 	*/
 	float* result = empty_matrix();
+	const int nelements = g_elements;
 	
 	result[CACHE_TYPE] = M_UNIFORM;
 	
@@ -558,7 +516,7 @@ float* uniform_matrix(float value) {
 		
 		spawn_threads(functionPtr, data);
 	}else{
-		for(int i = 0; i < g_elements; i++){
+		for(int i = 0; i < nelements; i++){
 			result[i] = value;
 		}
 	}
@@ -575,6 +533,7 @@ float* sequence_matrix(float start, float step) {
 		1 1 => 3 4
 	*/
 	float* result = empty_matrix();
+	const int nelements = g_elements;
 	
 	result[CACHE_TYPE] = M_SEQUENCE;
 	
@@ -589,7 +548,7 @@ float* sequence_matrix(float start, float step) {
 				};
 		spawn_threads(functionPtr, data);
 	}else{
-		for(int i = 0; i < g_elements; i++){
+		for(int i = 0; i < nelements; i++){
 			result[i] = start+(step*i);
 		}
 	}
@@ -629,10 +588,108 @@ float* sorted(const float* matrix) {
 	if(matrix[CACHE_TYPE] == M_UNIFORM || matrix[CACHE_TYPE] == M_SORTED){
 		return result;
 	}else{
-		//result[CACHE_TYPE] = M_SORTED;
-		qsort(result, g_elements, sizeof(float), sortcmp);
+		result[CACHE_TYPE] = M_SORTED;
+		const int nelements = g_elements;
+		MergeSort(result, nelements);
+		//qsort(result, nelements, sizeof(float), sortcmp);
 		return result;
 	}
+}
+
+/**
+ *  Merge Sort sourced from:
+ *	https://gist.github.com/mycodeschool/9678029
+ */
+// Function to Merge Arrays L and R into A.  
+// lefCount = number of elements in L 
+// rightCount = number of elements in R.  
+void Merge(float *A,float *L,int leftCount,float *R,int rightCount) { 
+	int i,j,k; 
+ 
+ 	// i - to mark the index of left aubarray (L) 
+ 	// j - to mark the index of right sub-raay (R) 
+ 	// k - to mark the index of merged subarray (A) 
+ 	i = 0; j = 0; k =0; 
+ 
+ 	while(i<leftCount && j< rightCount) { 
+ 		if(L[i]  < R[j]) A[k++] = L[i++]; 
+ 		else A[k++] = R[j++]; 
+ 	} 
+ 	while(i < leftCount) A[k++] = L[i++]; 
+ 	while(j < rightCount) A[k++] = R[j++]; 
+ } 
+ 
+ 
+ // Recursive function to sort an array of integers.  
+ void MergeSort(float* A,int n) { 
+ 	int mid;
+	float *L, *R;
+	const int nthreads = g_nthreads;
+ 	if(n < 2) return; // base condition. If the array has less than two element, do nothing.  
+ 
+ 	mid = n/2;  // find the mid index.  
+ 
+	// create left and right subarrays 
+ 	// mid elements (from index 0 till mid-1) should be part of left sub-array  
+ 	// and (n-mid) elements (from mid to n-1) will be part of right sub-array 
+ 	L = (float*)malloc(mid*sizeof(float));  
+ 	R = (float*)malloc((n- mid)*sizeof(float));
+	
+	pthread_t thread_ids[nthreads];
+	quicksort_type args[nthreads];
+	
+	void* (*functionPtr)(void*);
+	functionPtr = &parallel_qsort;
+
+	args[0] = (quicksort_type) {
+		.cmatrix = A,
+		.matrix = L,
+		.n = mid,
+		.start = 0,
+		.end = mid,
+	};
+	
+	args[1] = (quicksort_type) {
+		.cmatrix = A,
+		.matrix = R,
+		.n = n-mid,
+		.start = mid,
+		.end = n,
+	};
+	printf("ready to spawn threads\n");
+	// launch threads
+	for (int i = 0; i < 2; i++) {
+		pthread_create(thread_ids + i, NULL, functionPtr, args+i );
+	}
+	
+	// wait for threads to finish
+	for (size_t i = 0; i < 2; i++) {
+		pthread_join(thread_ids[i], NULL);
+	}
+	printf("ready to merge\n");
+ 	//MergeSort(L,mid);  // sorting the left subarray 
+ 	//MergeSort(R,n-mid);  // sorting the right subarray
+
+ 	Merge(A,L,mid,R,n-mid);  // Merging L and R into A as sorted list. 
+    free(L); 
+    free(R); 
+} 
+
+// custom function to call qsort
+void* parallel_qsort(void* args){
+	quicksort_type* data = (quicksort_type*) args;
+	
+	const float* A = data->cmatrix;
+	float* D = data->matrix;
+	const int size = data->n;
+	const int start = data->start;
+	const int end = data->end;
+	
+	for(int i = start;i<end;i++) D[i] = A[i]; // creating left subarray
+	printf("sub array created.\n");
+	qsort(D, size, sizeof(float), sortcmp);
+	
+	return NULL;
 }
 
 
@@ -640,9 +697,6 @@ float* sorted(const float* matrix) {
  * Returns new matrix with elements rotated 90 degrees clockwise.
  */
 float* rotated(const float* matrix) {
-
-	float* result = empty_matrix();
-
 	/*
 		1 2    3 1
 		3 4 => 4 2
@@ -652,12 +706,13 @@ float* rotated(const float* matrix) {
 		7 8 9 => 9 6 3
 		
 	*/
-	
+	float* result = empty_matrix();
 	result[CACHE_TYPE] = M_RANDOM;
+	const int nwidth = g_width;
 	
-	for(int row=0; row < g_width; row++){
-		for(int col=0; col < g_width; col++){
-			result[row*g_width+col] = matrix[(g_width-col-1)*g_width+(row)];
+	for(int row=0; row < nwidth; row++){
+		for(int col=0; col < nwidth; col++){
+			result[row*nwidth+col] = matrix[(nwidth-col-1)*nwidth+(row)];
 		}
 	}
 	
@@ -668,17 +723,16 @@ float* rotated(const float* matrix) {
  * Returns new matrix with elements ordered in reverse.  DONE!!
  */
 float* reversed(const float* matrix) {
-
-	float* result = empty_matrix();
-
 	/*
 		1 2    4 3
 		3 4 => 2 1
 	*/
+	float* result = empty_matrix();
 	result[CACHE_TYPE] = M_RANDOM;
+	const int nelements = g_elements;
+	const int last = nelements - 1;
 	
-	int last = g_elements - 1;
-	for(int i = 0; i < g_elements; i++){
+	for(int i = 0; i < nelements; i++){
 		result[i] = matrix[last-i];
 	}
 
@@ -689,19 +743,17 @@ float* reversed(const float* matrix) {
  * Returns new transposed matrix.
  */
 float* transposed(const float* matrix) {
-
-	float* result = empty_matrix();
-
 	/*
 		1 2    1 3
 		3 4 => 2 4
 	*/
-	
+	float* result = empty_matrix();
 	result[CACHE_TYPE] = M_RANDOM;
+	const int nwidth = g_width;
 	
-	for(int row=0; row < g_width; row++){
-		for(int col=0; col < g_width; col++){
-			result[row*g_width+col] = matrix[col*g_width+row];
+	for(int row=0; row < nwidth; row++){
+		for(int col=0; col < nwidth; col++){
+			result[row*nwidth+col] = matrix[col*nwidth+row];
 		}
 	}
 
@@ -719,6 +771,7 @@ float* scalar_add(const float* matrix, float scalar) {
 		1 2        5 6
 		3 4 + 4 => 7 8
 	*/
+	const int nelements = g_elements;
 	if(scalar == 0) return cloned(matrix);
 	else{
 		float* result = empty_matrix();
@@ -736,7 +789,7 @@ float* scalar_add(const float* matrix, float scalar) {
 			
 			spawn_threads(functionPtr, data);
 		}else{
-			for(int i = 0; i < g_elements; i++){
+			for(int i = 0; i < nelements; i++){
 				result[i] = matrix[i] + scalar;
 			}
 		}
@@ -748,10 +801,7 @@ float* scalar_add(const float* matrix, float scalar) {
 /**
  * Returns new matrix with scalar multiplied to each element.
  */
-float* scalar_mul(const float* matrix, float scalar) {
-
-	
-	
+float* scalar_mul(const float* matrix, float scalar) {	
 	/*
 		1 0        2 0
 		0 1 x 2 => 0 2
@@ -759,6 +809,7 @@ float* scalar_mul(const float* matrix, float scalar) {
 		1 2        2 4
 		3 4 x 2 => 6 8
 	*/
+	const int nelements = g_elements;
 	if(scalar == 0) return cloned(matrix);
 	else{
 		float* result = empty_matrix();
@@ -775,8 +826,7 @@ float* scalar_mul(const float* matrix, float scalar) {
 			
 			spawn_threads(functionPtr, data);
 		}else{
-			
-			for(int i = 0; i < g_elements; i++){
+			for(int i = 0; i < nelements; i++){
 				result[i] = matrix[i] * scalar;
 			}
 		}
@@ -791,9 +841,6 @@ float* scalar_mul(const float* matrix, float scalar) {
  * adding the two given matrices together.
  */
 float* matrix_add(const float* matrix_a, const float* matrix_b) {
-
-	float* result = empty_matrix();
-	result[CACHE_TYPE] = M_RANDOM;
 	/*
 		1 0   0 1    1 1
 		0 1 + 1 0 => 1 1
@@ -801,6 +848,10 @@ float* matrix_add(const float* matrix_a, const float* matrix_b) {
 		1 2   4 4    5 6
 		3 4 + 4 4 => 7 8
 	*/
+	float* result = empty_matrix();
+	result[CACHE_TYPE] = M_RANDOM;
+	const int nelements = g_elements;
+	
 	if(g_width > OPTIMIAL_THREAD-10 && g_nthreads > 1){
 		void* (*functionPtr)(void*);
 		functionPtr = &matrix_add_thread;
@@ -814,7 +865,7 @@ float* matrix_add(const float* matrix_a, const float* matrix_b) {
 		spawn_threads(functionPtr, data);
 	}else{
 		
-		for(int i = 0; i < g_elements; i++){
+		for(int i = 0; i < nelements; i++){
 			result[i] = matrix_a[i] + matrix_b[i];
 		}
 	}
@@ -838,9 +889,11 @@ float* matrix_mul(const float* matrix_a, const float* matrix_b) {
 	*/
 	if(matrix_b[CACHE_TYPE] == M_IDENTITY) return cloned(matrix_a);
 	
+	const int nwidth = g_width;
+	
 	float* result = empty_matrix();
 	result[CACHE_TYPE] = M_RANDOM;
-	if(g_width > OPTIMIAL_THREAD-10 && g_nthreads > 1){
+	if(nwidth > OPTIMIAL_THREAD-10 && g_nthreads > 1){
 		void* (*functionPtr)(void*);
 		functionPtr = &matrix_mul_thread;
 		float* transpose = transposed(matrix_b);
@@ -856,13 +909,13 @@ float* matrix_mul(const float* matrix_a, const float* matrix_b) {
 		// very slow method
 		float sum;
 		float* transpose = transposed(matrix_b);
-		for(int i=0; i < g_width; i++){
-			for(int k=0; k < g_width; k++){
+		for(int i=0; i < nwidth; i++){
+			for(int k=0; k < nwidth; k++){
 				sum = 0;
-				for(int j=0; j < g_width; j++){
-					sum += matrix_a[i * g_width + j]*transpose[k * g_width + j];
+				for(int j=0; j < nwidth; j++){
+					sum += matrix_a[i * nwidth + j]*transpose[k * nwidth + j];
 				}
-				result[i * g_width + k] = sum;
+				result[i * nwidth + k] = sum;
 			}
 		}
 		free(transpose);
@@ -915,11 +968,6 @@ float* matrix_pow(const float* matrix, int exponent) {
  * convolving given matrix with a 3x3 kernel matrix.
  */
 float* matrix_conv(const float* matrix, const float* kernel) {
-
-	float* result = new_matrix();
-	
-	result[CACHE_TYPE] = M_RANDOM;
-
 	/*
 		Convolution is the process in which the values of a matrix are
 		computed according to the weighted sum of each value and it's
@@ -931,14 +979,18 @@ float* matrix_conv(const float* matrix, const float* kernel) {
 		13 14 15 16 :: sharpen =>  16 18 19 21
 		
 	*/
+	float* result = new_matrix();
+	result[CACHE_TYPE] = M_RANDOM;
+	
 	float sum = 0;
-	int width_kernel = 3;
+	const int width_kernel = 3;
+	const int nwidth = g_width;
 	int offset_col = 0;
 	int offset_row = 0;
 	
-	for(int row=0; row < g_width; row++){
+	for(int row=0; row < nwidth; row++){
 		// traverse the array one element at a time.
-		for(int col=0; col < g_width; col++){
+		for(int col=0; col < nwidth; col++){
 			// start working out the convolution of one element,
 			//   moving along the kernel one at a time.
 			//  Kernel starts in it's top corner.
@@ -952,15 +1004,15 @@ float* matrix_conv(const float* matrix, const float* kernel) {
 					offset_col = 0;
 					offset_row = 0;
 					if( row == 0 && c_row == 0) offset_row = 1;  // whole top row
-					if( row == g_width-1 && c_row == 2) offset_row = -1; // whole bottom row
+					if( row == nwidth-1 && c_row == 2) offset_row = -1; // whole bottom row
 					
 					if( col == 0 && c_col == 0) offset_col = 1; //whole left side
-					if( col == g_width-1 && c_col == 2) offset_col = -1; // whole right side					
+					if( col == nwidth-1 && c_col == 2) offset_col = -1; // whole right side					
 
-					// reference (centre):  matrix[row*g_width+col];
-					sum += kernel[c_row * width_kernel + c_col] * matrix[(row+c_row-1+offset_row) * g_width + (col+c_col-1+offset_col)];
+					// reference (centre):  matrix[row*nwidth+col];
+					sum += kernel[c_row * width_kernel + c_col] * matrix[(row+c_row-1+offset_row) * nwidth + (col+c_col-1+offset_col)];
 				}
-				result[row * g_width + col] = sum;
+				result[row * nwidth + col] = sum;
 			}
 		}
 	}
@@ -984,12 +1036,13 @@ float get_sum(const float* matrix) {
 		1 1
 		1 1 => 4
 	*/
-	if(matrix[g_elements] == M_IDENTITY) return g_width;
-	else if(matrix[g_elements] == M_UNIFORM) return matrix[0]*g_elements;
-	else if(matrix[g_elements] == M_SEQUENCE) return ((g_elements/2.0)*(matrix[0]+matrix[g_elements-1]));
+	const int nelements = g_elements;
+	if(matrix[nelements] == M_IDENTITY) return g_width;
+	else if(matrix[nelements] == M_UNIFORM) return matrix[0]*nelements;
+	else if(matrix[nelements] == M_SEQUENCE) return ((nelements/2.0)*(matrix[0]+matrix[nelements-1]));
 	else{
 		float sum = 0;
-		for(int i = 0; i < g_elements; i++){
+		for(int i = 0; i < nelements; i++){
 			sum += matrix[i];
 		}
 		return sum;
@@ -1008,13 +1061,14 @@ float get_trace(const float* matrix) {
 		2 1
 		1 2 => 4
 	*/
-	if(matrix[CACHE_TYPE] == M_IDENTITY) return g_width;
-	else if(matrix[CACHE_TYPE] == M_UNIFORM) return matrix[0]*g_width;
-	else if(g_width == 1) return matrix[0];
+	const int nwidth = g_width;
+	if(matrix[CACHE_TYPE] == M_IDENTITY) return nwidth;
+	else if(matrix[CACHE_TYPE] == M_UNIFORM) return matrix[0]*nwidth;
+	else if(nwidth == 1) return matrix[0];
 	else{
 		float sum = 0;
-		for(int i = 0; i < g_width; i++){
-			sum += matrix[i * g_width + i];
+		for(int i = 0; i < nwidth; i++){
+			sum += matrix[i * nwidth + i];
 		}
 		return sum;
 	}
@@ -1032,13 +1086,14 @@ float get_minimum(const float* matrix) {
 		4 3
 		2 1 => 1
 	*/
+	const int nelements = g_elements;
 	if(matrix[CACHE_TYPE] == M_IDENTITY) return 0.0;
 	else if(matrix[CACHE_TYPE] == M_UNIFORM) return matrix[0];
 	else if(matrix[CACHE_TYPE] == M_SEQUENCE) return matrix[0];
 	else if(matrix[CACHE_TYPE] == M_SORTED) return matrix[0];
 	else{
 		float min = matrix[0];
-		for(int i = 0; i < g_elements; i++){
+		for(int i = 0; i < nelements; i++){
 			if(matrix[i]<min){
 				min = matrix[i];
 			}
@@ -1059,13 +1114,14 @@ float get_maximum(const float* matrix) {
 		4 3
 		2 1 => 4
 	*/
+	const int nelements = g_elements;
 	if(matrix[CACHE_TYPE] == M_IDENTITY) return 1.0;
 	else if(matrix[CACHE_TYPE] == M_UNIFORM) return matrix[0];
 	else if(matrix[CACHE_TYPE] == M_SEQUENCE) return matrix[g_elements-1];
 	else if(matrix[CACHE_TYPE] == M_SORTED) return matrix[g_elements-1];
 	else{
 		float max = matrix[0];
-		for(int i = 0; i < g_elements; i++){
+		for(int i = 0; i < nelements; i++){
 			if(matrix[i]>max){
 				max = matrix[i];
 			}
@@ -1079,11 +1135,11 @@ float get_maximum(const float* matrix) {
  * Displays given matrix.  TODO: REMOVE
  */
 void display_c(const float* matrix, int width) {
-
-	for (int y = 0; y < width; y++) {
-		for (int x = 0; x < width; x++) {
+	const int nwidth = g_width;
+	for (int y = 0; y < nwidth; y++) {
+		for (int x = 0; x < nwidth; x++) {
 			if (x > 0) printf(" ");
-			printf("%.2f", matrix[y * width + x]);
+			printf("%.2f", matrix[y * nwidth + x]);
 		}
 
 		printf("\n");
@@ -1094,7 +1150,7 @@ void display_c(const float* matrix, int width) {
 /**
  *  Builds a matrix for the determinant function
  */
-float* build_matrix(const float* matrix, int crow, int width){
+float* build_matrix(const float* matrix, const int crow, const int width){
 	if(width == 0){
 		return NULL;
 	}
@@ -1170,13 +1226,14 @@ float get_determinant(const float* matrix) {
 		0 4 0
 		2 0 8 => 240
 	*/
+	const int nwidth = g_width;
 	//det search for zero on column, go along column with zero
-	if(g_width == 1){
+	if(nwidth == 1){
 		return matrix[0];
-	}else if(g_width == 2){
-		return ((matrix[0*g_width+0]*matrix[1*g_width+1])-(matrix[0*g_width+1]*matrix[1*g_width+0]));
+	}else if(nwidth == 2){
+		return ((matrix[0*nwidth+0]*matrix[1*nwidth+1])-(matrix[0*nwidth+1]*matrix[1*nwidth+0]));
 	}else{
-		return determinant_calc(matrix, g_width);
+		return determinant_calc(matrix, nwidth);
 	}
 }
 
@@ -1193,7 +1250,8 @@ ssize_t get_frequency(const float* matrix, float value) {
 		0 1 :: 2 => 0
 	*/
 	ssize_t freq = 0;
-	for(int i = 0; i < g_elements; i++){
+	const int nelements = g_elements;
+	for(int i = 0; i < nelements; i++){
 		if(matrix[i]==value){
 			freq++;
 		}
