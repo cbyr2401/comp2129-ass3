@@ -1,0 +1,9 @@
+set a = sequence 1 1
+set b = rotated a
+set c = uniform 4
+set d = rotated c
+compute frequency a 2
+compute frequency b 2
+compute frequency c 4
+compute frequency d 4
+bye

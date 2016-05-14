@@ -2,6 +2,7 @@
 #define MATRIX_H
 
 #include <unistd.h>
+#include <pthread.h>
 
 // utility functions
 
@@ -89,7 +90,17 @@ typedef struct {
 	const float* matrix;
 	int start;
 	int end;
+	pthread_mutex_t lock;
 } d_othread;
+
+typedef struct {
+	ssize_t* result;
+	const float* matrix;
+	int value;
+	int start;
+	int end;
+	pthread_mutex_t lock;
+} d_freqthread;
 
 typedef struct {
 	float* result;
@@ -123,7 +134,7 @@ typedef struct {
 } mergesort_type;
 
 typedef enum {
-	MMULTHREAD, MADDTHREAD, STHREAD, OTHREAD, IMTHREAD, UMTHREAD, SMTHREAD, RMTHREAD
+	MMULTHREAD, MADDTHREAD, STHREAD, OTHREAD, IMTHREAD, UMTHREAD, SMTHREAD, RMTHREAD, FREQTHREAD
 } thread_type;
 
 typedef struct {
@@ -164,6 +175,12 @@ typedef struct {
 		{
 			float value;
 		} uniform;
+		struct
+		{
+			const float* matrix;
+			ssize_t* freq;
+			const int value;
+		} frequency;
 	} args;
 } thread_args;
 
@@ -175,6 +192,8 @@ void* sequence_thread(void* argv);
 void* scalar_mul_thread(void* argv);
 void* matrix_mul_thread(void* argv);
 void* matrix_add_thread(void* argv);
+void* sum_thread(void* argv);
+void* freq_thread(void* argv);
 
 //sorting
 void* parallel_qsort(void* args);
@@ -182,7 +201,5 @@ void* parallelMerge(void* argv);
 void MergeSortDuel(float* A,int n);
 void MergeSortQuad(float* A,int n);
 void Merge(float *A,float *L,int leftCount,float *R,int rightCount);
-
-
 
 #endif
