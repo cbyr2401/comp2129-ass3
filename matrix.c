@@ -1130,10 +1130,6 @@ float* matrix_mul(const float* matrix_a, const float* matrix_b) {
  * powering the given matrix to the exponent.
  */
 float* matrix_pow(const float* matrix, int exponent) {
-
-	float* result = NULL;
-	float* temp;
-
 	/*
 		1 2        1 0
 		3 4 ^ 0 => 0 1
@@ -1144,7 +1140,9 @@ float* matrix_pow(const float* matrix, int exponent) {
 		1 2        199 290
 		3 4 ^ 4 => 435 634
 	*/
-		
+	float* result = NULL;
+	float* temp;
+	
 	if(exponent == 0){
 		return identity_matrix();
 	}else if(exponent == 1){
@@ -1262,8 +1260,7 @@ float get_sum(const float* matrix) {
 			return sum;
 		}
 		
-	}
-	
+	}	
 }
 
 /**
@@ -1482,6 +1479,5 @@ ssize_t get_frequency(const float* matrix, float value) {
 		}
 		
 	}
-	
 	
 }
