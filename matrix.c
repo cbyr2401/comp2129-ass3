@@ -109,7 +109,7 @@ void spawn_threads(void*(*funcptr)(void*), thread_args argv){
 			end = id == nthreads - 1 ? nelements : (id + 1) * (nelements / nthreads);
 			pthread_mutex_t mylock = PTHREAD_MUTEX_INITIALIZER;
 			((d_othread*)args)[id] = (d_othread) {
-				.result = result,
+				.result = argv.args.operation.val,
 				.start = start,
 				.end = end,
 				.matrix = argv.args.operation.matrix,
@@ -194,6 +194,15 @@ void spawn_threads(void*(*funcptr)(void*), thread_args argv){
 	for (size_t i = 0; i < nthreads; i++) {
 		pthread_join(thread_ids[i], NULL);
 	}
+	
+	// if(method == OTHREAD){
+		// double sum = 0;
+		// for(int i = 0; i < nthreads; i++){
+			// sum += ((d_othread*)args)[i].result;
+		// }
+		// *result = (float)sum;
+	// }
+	
 	//if(method == MMULTHREAD) free(argv.args.matrix.matrix_b);
 	free(args);
 	
@@ -351,7 +360,7 @@ void* matrix_add_thread(void* argv){
 }
 
 /**
- *	Get Sum Thread Process
+ *	Get Sum Thread Process  TODO Fix
  */
 void* sum_thread(void* argv){
 	d_othread* data = (d_othread*)argv;
@@ -360,21 +369,22 @@ void* sum_thread(void* argv){
 	const int end = data->end;
 	
 	const float* matrix = data->matrix;
-	float* result = data->result;
-	float sum = 0;
+	double* result = data->result;
+	double sum = 0;
 	
 	for(int i = start; i < end; i++){
 		sum += matrix[i];
 	}
-	pthread_mutex_lock(&data->lock);
+	pthread_mutex_lock(&data->lock);	
 	*result += sum;
 	pthread_mutex_unlock(&data->lock);
+	//data->result = (float)sum;
 	
 	return NULL;
 }
 
 /**
- *	Get Frequency Thread Process  TODO FIX
+ *	Get Frequency Thread Process
  */
 void* freq_thread(void* argv){
 	d_freqthread* data = (d_freqthread*) argv;
@@ -384,7 +394,33 @@ void* freq_thread(void* argv){
 	const int value = data->value;
 	const float* matrix = data->matrix;
 	
-	ssize_t* result = data->result;
+	int* result = data->result;
+	int freq = 0;
+	
+	for(int i = start; i < end; i++){
+		if(matrix[i]==value){
+			freq++;
+		}
+	}
+	pthread_mutex_lock(&data->lock);
+	*result += freq;
+	pthread_mutex_unlock(&data->lock);
+	
+	return NULL;
+}
+
+/**
+ *	Get Min Thread Process
+ */
+void* min_thread(void* argv){
+	d_freqthread* data = (d_freqthread*) argv;
+	
+	const int start = data->start;
+	const int end = data->end;
+	const int value = data->value;
+	const float* matrix = data->matrix;
+	
+	int* result = data->result;
 	int freq = 0;
 	
 	for(int i = start; i < end; i++){
@@ -1234,33 +1270,44 @@ float get_sum(const float* matrix) {
 		1 1
 		1 1 => 4
 	*/
-	const int nelements = g_elements;
+	// const int nelements = g_elements;
 	
+	// if(matrix[nelements] == M_IDENTITY) return g_width;
+	// else if(matrix[nelements] == M_UNIFORM) return matrix[0]*nelements;
+	// else if(matrix[nelements] == M_SEQUENCE) return (0.5*nelements)*(matrix[0]+matrix[nelements-1]);
+	// else{
+		// double sum = 0;
+		// double* sptr = &sum;
+		// if(g_width > OPTIMIAL_THREAD && g_nthreads > 1){
+			// void* (*functionPtr)(void*);
+			// functionPtr = &sum_thread;
+			// thread_args data = (thread_args){
+					// .type = OTHREAD,
+					// .args.operation.matrix = matrix,
+					// .args.operation.val = sptr,
+					// };
+			
+			// spawn_threads(functionPtr, data);
+			// return sum;
+		// }else{
+			// for(int i = 0; i < nelements; i++){
+				// sum += matrix[i];
+			// }
+			// return sum;
+		// }
+		
+	// }
+	const int nelements = g_elements;
 	if(matrix[nelements] == M_IDENTITY) return g_width;
 	else if(matrix[nelements] == M_UNIFORM) return matrix[0]*nelements;
 	else if(matrix[nelements] == M_SEQUENCE) return (0.5*nelements)*(matrix[0]+matrix[nelements-1]);
 	else{
-		float sum = 0;
-		float* sptr = &sum;
-		if(g_width > OPTIMIAL_THREAD && g_nthreads > 1){
-			void* (*functionPtr)(void*);
-			functionPtr = &sum_thread;
-			thread_args data = (thread_args){
-					.type = OTHREAD,
-					.args.operation.matrix = matrix,
-					.result = sptr,
-					};
-			
-			spawn_threads(functionPtr, data);
-			return sum;
-		}else{
-			for(int i = 0; i < nelements; i++){
-				sum += matrix[i];
-			}
-			return sum;
+		double sum = 0;
+		for(int i = 0; i < nelements; i++){
+			sum += matrix[i];
 		}
-		
-	}	
+		return sum;
+	}
 }
 
 /**
@@ -1446,7 +1493,7 @@ ssize_t get_frequency(const float* matrix, float value) {
 		0 1 :: 2 => 0
 	*/
 	
-	ssize_t freq = 0;
+	int freq = 0;
 	const int nelements = g_elements;
 	const int nwidth = g_width;
 	
@@ -1455,7 +1502,7 @@ ssize_t get_frequency(const float* matrix, float value) {
 	else if(matrix[CACHE_TYPE] == M_UNIFORM && value == matrix[0]) return nelements;
 	else{
 		
-		ssize_t* sptr = &freq;
+		int* sptr = &freq;
 		if(g_width > OPTIMIAL_THREAD && g_nthreads > 1){
 			void* (*functionPtr)(void*);
 			functionPtr = &freq_thread;
@@ -1468,7 +1515,7 @@ ssize_t get_frequency(const float* matrix, float value) {
 					};
 			
 			spawn_threads(functionPtr, data);
-			return freq;
+			return (ssize_t)freq;
 		}else{
 			for(int i = 0; i < nelements; i++){
 				if(matrix[i]==value){
@@ -1477,7 +1524,16 @@ ssize_t get_frequency(const float* matrix, float value) {
 			}
 			return freq;
 		}
-		
 	}
+	// int freq = 0;
+	// const int nelements = g_elements;
+	// for(int i = 0; i < nelements; i++){
+		// if(matrix[i]==value){
+			// freq++;
+		// }
+	// }
+
+	// return (ssize_t) freq;
+	
 	
 }

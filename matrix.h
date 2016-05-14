@@ -86,7 +86,7 @@ typedef struct {
 } d_mthread;
 
 typedef struct {
-	float* result;
+	double* result;
 	const float* matrix;
 	int start;
 	int end;
@@ -94,7 +94,7 @@ typedef struct {
 } d_othread;
 
 typedef struct {
-	ssize_t* result;
+	int* result;
 	const float* matrix;
 	int value;
 	int start;
@@ -163,6 +163,7 @@ typedef struct {
 		struct
 		{
 			const float* matrix;
+			double* val;
 		} operation;
 		
 		struct
@@ -178,7 +179,7 @@ typedef struct {
 		struct
 		{
 			const float* matrix;
-			ssize_t* freq;
+			int* freq;
 			const int value;
 		} frequency;
 	} args;
