@@ -1,0 +1,4 @@
+set a = sequence 1 2
+set b = rotated a
+set c = sorted b
+bye

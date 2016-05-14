@@ -590,8 +590,12 @@ float* sorted(const float* matrix) {
 	}else{
 		result[CACHE_TYPE] = M_SORTED;
 		const int nelements = g_elements;
-		MergeSort(result, nelements);
-		//qsort(result, nelements, sizeof(float), sortcmp);
+		const int nthreads = g_nthreads;
+		
+		if(nthreads == 2) MergeSortDuel(result, nelements);
+		else if(nthreads >= 4) MergeSortQuad(result, nelements);
+		else qsort(result, nelements, sizeof(float), sortcmp);
+
 		return result;
 	}
 }
@@ -617,15 +621,14 @@ void Merge(float *A,float *L,int leftCount,float *R,int rightCount) {
  	} 
  	while(i < leftCount) A[k++] = L[i++]; 
  	while(j < rightCount) A[k++] = R[j++]; 
- } 
- 
+} 
  
  // Recursive function to sort an array of integers.  
- void MergeSort(float* A,int n) { 
+ // duel threads
+ void MergeSortDuel(float* A,int n) { 
  	int mid;
-	float *L, *R;
-	const int nthreads = g_nthreads;
- 	if(n < 2) return; // base condition. If the array has less than two element, do nothing.  
+	float* L = NULL;
+	float* R = NULL;
  
  	mid = n/2;  // find the mid index.  
  
@@ -633,10 +636,10 @@ void Merge(float *A,float *L,int leftCount,float *R,int rightCount) {
  	// mid elements (from index 0 till mid-1) should be part of left sub-array  
  	// and (n-mid) elements (from mid to n-1) will be part of right sub-array 
  	L = (float*)malloc(mid*sizeof(float));  
- 	R = (float*)malloc((n- mid)*sizeof(float));
+ 	R = (float*)malloc((n - mid)*sizeof(float));
 	
-	pthread_t thread_ids[nthreads];
-	quicksort_type args[nthreads];
+	pthread_t thread_ids[2];
+	quicksort_type args[2];
 	
 	void* (*functionPtr)(void*);
 	functionPtr = &parallel_qsort;
@@ -656,7 +659,7 @@ void Merge(float *A,float *L,int leftCount,float *R,int rightCount) {
 		.start = mid,
 		.end = n,
 	};
-	printf("ready to spawn threads\n");
+
 	// launch threads
 	for (int i = 0; i < 2; i++) {
 		pthread_create(thread_ids + i, NULL, functionPtr, args+i );
@@ -666,13 +669,131 @@ void Merge(float *A,float *L,int leftCount,float *R,int rightCount) {
 	for (size_t i = 0; i < 2; i++) {
 		pthread_join(thread_ids[i], NULL);
 	}
-	printf("ready to merge\n");
+
  	//MergeSort(L,mid);  // sorting the left subarray 
  	//MergeSort(R,n-mid);  // sorting the right subarray
 
  	Merge(A,L,mid,R,n-mid);  // Merging L and R into A as sorted list. 
-    free(L); 
-    free(R); 
+    free(L);
+    free(R);
+}
+
+
+ void MergeSortQuad(float* A,int n) { 
+	float* Greens = NULL;
+	float* Labor = NULL;
+	float* Liberal = NULL;
+	float* Nationals = NULL;
+	float* Coalition = NULL;
+	float* RuddGovernment = NULL;
+		
+	int q1 = n/4;
+ 	int mid = n/2;  // find the mid index.
+	int q3 = q1*3;
+	
+	
+	// create left and right subarrays 
+ 	// mid elements (from index 0 till mid-1) should be part of left sub-array  
+ 	// and (n-mid) elements (from mid to n-1) will be part of right sub-array 
+	
+	Greens = (float*)malloc(q1*sizeof(float));
+	Labor = (float*)malloc((mid-q1)*sizeof(float));
+	Liberal = (float*)malloc((q3-mid)*sizeof(float));
+	Nationals = (float*)malloc((n-q3)*sizeof(float));
+	RuddGovernment = (float*)malloc((mid)*sizeof(float));
+	Coalition = (float*)malloc((n-mid)*sizeof(float));
+	
+	pthread_t thread_ids[4];
+	quicksort_type args[4];
+	mergesort_type merge_args[2];
+	
+	void* (*pqsort)(void*);
+	void* (*pmsort)(void*);
+	pqsort = &parallel_qsort;
+	pmsort = &parallelMerge;
+	
+	args[0] = (quicksort_type) {
+		.cmatrix = A,
+		.matrix = Greens,
+		.n = q1,
+		.start = 0,
+		.end = q1,
+	};
+	
+	args[1] = (quicksort_type) {
+		.cmatrix = A,
+		.matrix = Labor,
+		.n = mid-q1,
+		.start = q1,
+		.end = mid,
+	};
+	
+	args[2] = (quicksort_type) {
+		.cmatrix = A,
+		.matrix = Liberal,
+		.n = q3-mid,
+		.start = mid,
+		.end = q3,
+	};
+	
+	args[3] = (quicksort_type) {
+		.cmatrix = A,
+		.matrix = Nationals,
+		.n = n-q3,
+		.start = q3,
+		.end = n,
+	};
+	
+	merge_args[0] = (mergesort_type) {
+		.result = RuddGovernment,
+		.L = Greens,
+		.Lsize = q1,
+		.R = Labor,
+		.Rsize = (mid-q1),
+	};
+	
+	merge_args[1] = (mergesort_type) {
+		.result = Coalition,
+		.L = Liberal,
+		.Lsize = (q3-mid),
+		.R = Nationals,
+		.Rsize = (n-q3),
+	};
+
+
+	// launch threads
+	for (int i = 0; i < 4; i++) {
+		pthread_create(thread_ids + i, NULL, pqsort, args+i );
+	}
+	
+	// wait for threads to finish
+	for (size_t i = 0; i < 4; i++) {
+		pthread_join(thread_ids[i], NULL);
+	}
+
+	
+	// Merging Left and Left into KRudd's Government.
+	// Merging Right and Right into Coalition.
+	
+	// launch threads
+	for (int i = 0; i < 2; i++) {
+		pthread_create(thread_ids + i, NULL, pmsort, merge_args+i );
+	}
+	
+	// wait for threads to finish
+	for (size_t i = 0; i < 2; i++) {
+		pthread_join(thread_ids[i], NULL);
+	}
+
+	Merge(A,RuddGovernment,mid,Coalition,n-mid);  // Merging Left and Right to form lower house.
+    
+	// call a double dissolution:
+	free(Greens);
+	free(Labor);
+	free(Liberal);
+	free(Nationals);
+	free(Coalition);
+	free(RuddGovernment);
 } 
 
 // custom function to call qsort
@@ -683,15 +804,39 @@ void* parallel_qsort(void* args){
 	float* D = data->matrix;
 	const int size = data->n;
 	const int start = data->start;
-	const int end = data->end;
 	
-	for(int i = start;i<end;i++) D[i] = A[i]; // creating left subarray
-	printf("sub array created.\n");
+	for(int i = 0;i<size;i++) D[i] = A[i+start]; // creating left subarray
 	qsort(D, size, sizeof(float), sortcmp);
 	
 	return NULL;
 }
 
+// custom function to call Merge
+void* parallelMerge(void* argv) { 
+	mergesort_type* data = (mergesort_type*) argv;
+	
+	float* A = data->result;
+	const float* L = data->L;
+	const float* R = data->R;
+	const int leftCount = data->Lsize;
+	const int rightCount = data->Rsize;
+	
+	int i,j,k;
+ 
+ 	// i - to mark the index of left aubarray (L) 
+ 	// j - to mark the index of right sub-raay (R) 
+ 	// k - to mark the index of merged subarray (A) 
+ 	i = 0; j = 0; k =0; 
+ 
+ 	while(i<leftCount && j< rightCount) { 
+ 		if(L[i]  < R[j]) A[k++] = L[i++]; 
+ 		else A[k++] = R[j++]; 
+ 	} 
+ 	while(i < leftCount) A[k++] = L[i++]; 
+ 	while(j < rightCount) A[k++] = R[j++];
+	
+	return NULL;
+} 
 
 /**
  * Returns new matrix with elements rotated 90 degrees clockwise.
@@ -1132,22 +1277,6 @@ float get_maximum(const float* matrix) {
 
 
 /**
- * Displays given matrix.  TODO: REMOVE
- */
-void display_c(const float* matrix, int width) {
-	const int nwidth = g_width;
-	for (int y = 0; y < nwidth; y++) {
-		for (int x = 0; x < nwidth; x++) {
-			if (x > 0) printf(" ");
-			printf("%.2f", matrix[y * nwidth + x]);
-		}
-
-		printf("\n");
-	}
-}
-
-
-/**
  *  Builds a matrix for the determinant function
  */
 float* build_matrix(const float* matrix, const int crow, const int width){
@@ -1159,7 +1288,6 @@ float* build_matrix(const float* matrix, const int crow, const int width){
 
 	if(width == 1){
 		result[0*width+0] = matrix[0*width+0];
-		//display_c(result, width);
 		return result;
 	}
 

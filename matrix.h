@@ -114,6 +114,14 @@ typedef struct {
 	int end;
 } quicksort_type;
 
+typedef struct {
+	float* result;
+	float* R;
+	float* L;
+	int Rsize;
+	int Lsize;
+} mergesort_type;
+
 typedef enum {
 	MMULTHREAD, MADDTHREAD, STHREAD, OTHREAD, IMTHREAD, UMTHREAD, SMTHREAD, RMTHREAD
 } thread_type;
@@ -170,7 +178,9 @@ void* matrix_add_thread(void* argv);
 
 //sorting
 void* parallel_qsort(void* args);
-void MergeSort(float* A,int n);
+void* parallelMerge(void* argv);
+void MergeSortDuel(float* A,int n);
+void MergeSortQuad(float* A,int n);
 void Merge(float *A,float *L,int leftCount,float *R,int rightCount);
 
 
