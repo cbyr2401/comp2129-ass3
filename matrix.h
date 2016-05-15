@@ -105,6 +105,14 @@ typedef struct {
 typedef struct {
 	float* result;
 	const float* matrix;
+	int start;
+	int end;
+	pthread_mutex_t lock;
+} d_maxthread;
+
+typedef struct {
+	float* result;
+	const float* matrix;
 	float value;
 	int start;
 	int end;
@@ -134,7 +142,7 @@ typedef struct {
 } mergesort_type;
 
 typedef enum {
-	MMULTHREAD, MADDTHREAD, STHREAD, OTHREAD, IMTHREAD, UMTHREAD, SMTHREAD, RMTHREAD, FREQTHREAD
+	MMULTHREAD, MADDTHREAD, STHREAD, OTHREAD, IMTHREAD, UMTHREAD, SMTHREAD, RMTHREAD, FREQTHREAD, MAXTHREAD
 } thread_type;
 
 typedef struct {
@@ -182,6 +190,11 @@ typedef struct {
 			int* freq;
 			const int value;
 		} frequency;
+		
+		struct
+		{
+			const float* matrix;
+		} minmax;
 	} args;
 } thread_args;
 

@@ -181,6 +181,22 @@ void spawn_threads(void*(*funcptr)(void*), thread_args argv){
 			start = end;
 		}
 	}
+	else if(method == MAXTHREAD){
+		args = (void*)malloc(sizeof(d_maxthread)*nthreads);
+		incre = sizeof(d_maxthread);
+		for(int id=0; id < nthreads; id++){
+			end = id == nthreads - 1 ? nelements : (id + 1) * (nelements / nthreads);
+			//pthread_mutex_t mylock = PTHREAD_MUTEX_INITIALIZER;				
+			((d_maxthread*)args)[id] = (d_maxthread) {
+				.result = result,
+				.start = start,
+				.end = end,
+				.matrix = argv.args.minmax.matrix,
+				//.lock = mylock,
+			};
+			start = end;
+		}
+	}
 	else{
 		return;
 	}
@@ -202,6 +218,18 @@ void spawn_threads(void*(*funcptr)(void*), thread_args argv){
 		// }
 		// *result = (float)sum;
 	// }
+	
+	if(method == MAXTHREAD){
+		float max = *((d_maxthread*)args)[0].result;
+		for(int i = 0; i < nthreads; i++){
+			if(max < *((d_maxthread*)args)[i].result){
+				max = *((d_maxthread*)args)[i].result;
+			}
+		}
+		*result = max;
+	}
+	
+	
 	
 	//if(method == MMULTHREAD) free(argv.args.matrix.matrix_b);
 	free(args);
@@ -405,6 +433,30 @@ void* freq_thread(void* argv){
 	pthread_mutex_lock(&data->lock);
 	*result += freq;
 	pthread_mutex_unlock(&data->lock);
+	
+	return NULL;
+}
+
+/**
+ *	Get Max Thread Process  TODO FIX
+ */
+void* max_thread(void* argv){
+	d_maxthread* data = (d_maxthread*) argv;
+	
+	const int start = data->start;
+	const int end = data->end;
+	const float* matrix = data->matrix;
+	
+	float max = matrix[start];
+	
+	for(int i = start; i < end; i++){
+		if(matrix[i] > max){
+			max = matrix[i];
+		}
+	}
+	//pthread_mutex_lock(&data->lock);
+	*data->result = max;
+	//pthread_mutex_unlock(&data->lock);
 	
 	return NULL;
 }
@@ -1352,17 +1404,32 @@ float get_maximum(const float* matrix) {
 	const int nelements = g_elements;
 	if(matrix[CACHE_TYPE] == M_IDENTITY) return 1.0;
 	else if(matrix[CACHE_TYPE] == M_UNIFORM) return matrix[0];
-	else if(matrix[CACHE_TYPE] == M_SEQUENCE) return matrix[g_elements-1];
-	else if(matrix[CACHE_TYPE] == M_SORTED) return matrix[g_elements-1];
+	else if(matrix[CACHE_TYPE] == M_SEQUENCE) return matrix[nelements-1];
+	else if(matrix[CACHE_TYPE] == M_SORTED) return matrix[nelements-1];
 	else{
-		float max = matrix[0];
-		for(int i = 0; i < nelements; i++){
-			if(matrix[i]>max){
-				max = matrix[i];
+		float max;
+		float* sptr = &max;
+		if(g_width > OPTIMIAL_THREAD && g_nthreads > 1){
+			void* (*functionPtr)(void*);
+			functionPtr = &max_thread;
+			thread_args data = (thread_args){
+					.type = MAXTHREAD,
+					.args.minmax.matrix = matrix,
+					.result = sptr,
+					};
+			
+			spawn_threads(functionPtr, data);
+			return max;
+		}else{
+			float max = matrix[0];
+			for(int i = 0; i < nelements; i++){
+				if(matrix[i]>max){
+					max = matrix[i];
+				}
 			}
-		}
-		return max;
-	}	
+			return max;
+	}
+	}
 }
 
 
