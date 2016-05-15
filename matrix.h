@@ -90,24 +90,16 @@ typedef struct {
 	const float* matrix;
 	int start;
 	int end;
-	pthread_mutex_t* lock;
+	pthread_mutex_t lock;
 } d_othread;
 
 typedef struct {
-	float* result;
-	const float* matrix;
-	int start;
-	int end;
-	pthread_mutex_t* lock;
-} d_minthread;
-
-typedef struct {
-	int result;
+	int* result;
 	const float* matrix;
 	int value;
 	int start;
 	int end;
-	pthread_mutex_t* lock;
+	pthread_mutex_t lock;
 } d_freqthread;
 
 typedef struct {
@@ -142,7 +134,7 @@ typedef struct {
 } mergesort_type;
 
 typedef enum {
-	MMULTHREAD, MADDTHREAD, STHREAD, OTHREAD, IMTHREAD, UMTHREAD, SMTHREAD, RMTHREAD, FREQTHREAD, MINTHREAD
+	MMULTHREAD, MADDTHREAD, STHREAD, OTHREAD, IMTHREAD, UMTHREAD, SMTHREAD, RMTHREAD, FREQTHREAD
 } thread_type;
 
 typedef struct {
@@ -173,12 +165,6 @@ typedef struct {
 			const float* matrix;
 			double* val;
 		} operation;
-		
-		struct
-		{
-			const float* matrix;
-			float* val;
-		} minmax;
 		
 		struct
 		{
